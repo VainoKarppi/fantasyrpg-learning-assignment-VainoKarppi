@@ -40,17 +40,15 @@ public abstract class NpcCharacter {
         CurrentWorld = newWorld;
     }
 
-    public void KillNPC(Player player) {
+    public void KillNPC(Player? killer = null) {
         CurrentWorld.RemoveNPC(this);
 
-        OnNpcKilled?.Invoke(player, this);
+        if (killer != null) killer.PlayerStatistics.EnemiesKilled++;
+
+        OnNpcKilled?.Invoke(killer, this);
     }
 
-    public void KillNPC() {
-        CurrentWorld.RemoveNPC(this);
 
-        OnNpcKilled?.Invoke(null, this);
-    }
 
     public static NpcCharacter CreateNPC(string npcType, World world) {
         if (world == null) throw new ArgumentNullException(nameof(world), "World cannot be null when creating an NPC.");

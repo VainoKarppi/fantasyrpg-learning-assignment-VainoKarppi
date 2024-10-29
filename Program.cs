@@ -53,10 +53,12 @@ while (true) {
 Player player = new Player(homeWorld, playerName);
 player.Money = 600;
 
+player.AddQuest(new Quests.Massacare(player));
+
 Console.WriteLine($"Welcome {player}. Type 'Help' for commands, and for intructions for how to play.");
 Console.WriteLine("You can access SHOP by typing: 'shop'. This can be only accessed in Home town.");
 
-List<string> Commands = ["Quit","Help","Shop","Inventory","Stats","World","Worlds","ChangeWorld","Potion", "Attack", "ChangeWeapon"];
+List<string> Commands = ["Quit","Help","Shop","Inventory","Stats","World","Worlds","ChangeWorld","Potion", "Attack", "ChangeWeapon","Quests","Quest","ChangeQuest"];
 
 while (true) {
     try {
@@ -89,6 +91,10 @@ while (true) {
 
         if (command == "attack") Attack();
 
+        if (command == "quest") DiplayQuestInfo();
+        if (command == "changequest") ChangeActiveQuest();
+        if (command == "quests") DiplayQuests();
+
     } catch (Exception ex) {
         Console.WriteLine(ex);
         Console.WriteLine(ex.Message);
@@ -113,6 +119,57 @@ void Showhelp() {
     Console.WriteLine("----------------------------------------------");
 }
 
+
+void ChangeActiveQuest() {
+    if (player.QuestList.Count() == 0) throw new Exception("No quests found!");
+
+    if (player.QuestList.Count() == 1 && player.CurrentQuest == player.QuestList[0])
+        throw new Exception("You dont have any more quests other than the one that is active!");
+
+
+    IQuest? selectedQuest;
+
+    // Get selected quest from list
+    DiplayQuests();
+    while (true) {
+        Console.WriteLine("\nSelect Active quest or 'exit'");
+        Console.Write($"{player.CurrentWorld.Name} (Quests) > ");
+        string mode = Console.ReadLine()!;
+        if (mode.ToLower() == "exit") return;
+        mode = mode.ToLower();
+
+        try {
+            selectedQuest = player.QuestList[int.Parse(mode)];
+            if (selectedQuest != null) break;
+        } catch (Exception) {}
+
+        Console.WriteLine("Invalid command. Try again!");
+    }
+
+    // Update Active quest
+    player.CurrentQuest = selectedQuest;
+}
+
+void DiplayQuests() {
+    Console.WriteLine("---------------------QUESTS---------------------");
+    int i = 0;
+    foreach (IQuest quest in player.QuestList) {
+        Console.WriteLine($"[{i}]    {quest.Name} - {quest.Description}");
+        i++;
+    }
+    Console.WriteLine("------------------------------------------------");
+}
+
+void DiplayQuestInfo() {
+    if (player.CurrentQuest is null) throw new Exception("No quest is active!");
+
+    Console.WriteLine("-----------------CURRENT QUESTS-----------------");
+    Console.WriteLine($"Name: {player.CurrentQuest.Name} - {player.CurrentQuest.Description}");
+    if (player.CurrentQuest.StageDescription != null) {
+        Console.WriteLine($"    {player.CurrentQuest.StageDescription}");
+    }
+    Console.WriteLine("------------------------------------------------");
+}
 
 void OpenShop() {
     if (!player.CurrentWorld.IsSafeWorld) throw new Exception("You must be in home world to perfor mthis operation!");

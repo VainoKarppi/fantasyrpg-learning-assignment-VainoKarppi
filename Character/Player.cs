@@ -18,6 +18,20 @@ public class Player {
 
     public IPlayerActions PlayerActions{ get; set; }
 
+    public List<IQuest> QuestList { get; set; } = [];
+    public IQuest? CurrentQuest { get; set; }
+
+
+    public Statistics PlayerStatistics { get; private set; } = new Statistics();
+    public class Statistics {
+        public int EnemiesKilled { get; set; } // TODO
+        public int DeathsCount { get; set; } // TODO
+        public double DamageDealt { get; set; } // TODO
+        public double DamageTaken { get; set; } // TODO
+
+        // TODO what else to add to statistics ???
+    }
+
 
     public Player(World startWorld, string playerName = "Player") {
         
@@ -85,16 +99,23 @@ public class Player {
             return;
         }
  
-        // If weapon is fist -> dont add it to inventory
-        if (CurrentWeapon is MeleeWeapon.Fists) return;
-
+        // If weapon is fist -> dont add it to inventory +
         // Move old weapon to inventory and select new weapon
-        InventoryItems.Add(CurrentWeapon);
+        if (CurrentWeapon is not MeleeWeapon.Fists) InventoryItems.Add(CurrentWeapon);
         
         try {
             InventoryItems.Remove(newWeapon);
         } catch (Exception) {}
         
         CurrentWeapon = newWeapon;
+    }
+
+
+    public void AddQuest(IQuest quest) {
+        if (QuestList.Contains(quest)) throw new Exception("Quest already active!");
+
+        if (CurrentQuest == null) CurrentQuest = quest;
+        
+        QuestList.Add(quest);
     }
 }

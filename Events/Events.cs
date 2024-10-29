@@ -14,8 +14,20 @@ public class GameEventListener {
 
         BaseNpcActions.OnNpcAction += HandleNpcAction;
         BaseNpcActions.OnNpcAttack += HandleNpcAttack;
+
+    
+
+        IQuest.OnQuestUpdated += HandleQuestUpdated;
+        IQuest.OnQuestEnded += HandleQuestEnded;
     }
 
+
+    private void HandleQuestUpdated(IQuest quest) {
+        Console.WriteLine($"Current stage: {quest.StageDescription}");
+    }
+    private void HandleQuestEnded(IQuest quest, bool succes) {
+        Console.WriteLine($"Current stage: {quest.StageDescription}");
+    }
 
     private void HandleWorldChanged(World oldworld, World newWorld) {
 
@@ -68,6 +80,7 @@ public class GameEventListener {
 
     private void HandlePlayerAttack(Player player, NpcCharacter npc, int damage) {
         npc.Health -= damage;
+        player.PlayerStatistics.DamageDealt += damage;
         
         if (npc.Health <= 0) {
             Console.WriteLine($"Enemy Killed! Damage dealt: {damage}");

@@ -6,6 +6,7 @@
     <RootNamespace>fantasyrpg_learning_assignment_VainoKarppi</RootNamespace>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <NoWarn>IDE0074;CA1050</NoWarn>
   </PropertyGroup>
 
 </Project>
