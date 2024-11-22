@@ -11,17 +11,6 @@ public interface IBuyable {
 }
 
 
-public class ShopItem {
-    public object Item { get; }
-    public int Price { get; }
-
-    public ShopItem(object item, int price) {
-        Item = item;
-        Price = price;
-    }
-}
-
-
 
 // Shop class to manage items available for sale
 public class Shop {

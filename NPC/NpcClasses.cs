@@ -1,7 +1,7 @@
 
 // Specific Character Classes
 public class NpcWarrior : NpcCharacter {
-    public NpcWarrior(World spawnWorld) : base(spawnWorld) {
+    public NpcWarrior(World spawnWorld, int xPos, int yPos) : base(spawnWorld, xPos, yPos) {
         Name = "Warrior";
         Health = 150;
         Mana = 20;
@@ -17,7 +17,7 @@ public class NpcWarrior : NpcCharacter {
 }
 
 public class NpcMage : NpcCharacter {
-    public NpcMage(World spawnWorld) : base(spawnWorld) {
+    public NpcMage(World spawnWorld, int xPos, int yPos) : base(spawnWorld, xPos, yPos) {
         Name = "Mage";
         Health = 70;
         Mana = 120;
@@ -33,7 +33,7 @@ public class NpcMage : NpcCharacter {
 }
 
 public class NpcArcher : NpcCharacter {
-    public NpcArcher(World spawnWorld) : base(spawnWorld) {
+    public NpcArcher(World spawnWorld, int xPos, int yPos) : base(spawnWorld, xPos, yPos) {
         Name = "Archer";
         Health = 90;
         Mana = 50;

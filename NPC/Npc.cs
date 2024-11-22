@@ -8,8 +8,19 @@ public abstract class NpcCharacter : ICharacter {
     public int Agility { get; set; }
     public int AttackTime { get; set; } = 5;
 
-    public int ID { get; } = IDGenerator.GenerateId();
 
+    // 3D parameters
+    public int X { get; set; }
+    public int Y { get; set; }
+    public int Width { get; set; } = 20;
+    public int Height { get; set; } = 20;
+    public Color Color => Color.Red;
+    public Rectangle Bounds => new Rectangle(X, Y, Width, Height);
+
+
+
+
+    public int ID { get; } = IDGenerator.GenerateId();
 
     public ItemArmor Armor { get; set; }
 
@@ -22,8 +33,11 @@ public abstract class NpcCharacter : ICharacter {
     public static event Action<NpcCharacter, Player?>? OnNpcKilled;
 
 
-    public NpcCharacter(World world) {
+    public NpcCharacter(World world, int xPos, int yPos) {
         CurrentWorld = world ?? throw new ArgumentNullException(nameof(world), "CurrentWorld cannot be null.");
+
+        X = xPos;
+        Y = yPos;
 
         Armor = new ItemArmor();
     }
@@ -51,17 +65,17 @@ public abstract class NpcCharacter : ICharacter {
 
 
 
-    public static NpcCharacter CreateNPC(string npcType, World world) {
-        if (world == null) throw new ArgumentNullException(nameof(world), "World cannot be null when creating an NPC.");
+    public static NpcCharacter CreateNPC(string npcType, World spawnWorld, int xPos, int yPos) {
+        if (spawnWorld == null) throw new ArgumentNullException(nameof(spawnWorld), "World cannot be null when creating an NPC.");
 
         NpcCharacter npc = npcType.ToLower() switch {
-            "warrior" => new NpcWarrior(world),
-            "mage" => new NpcMage(world),
-            "archer" => new NpcArcher(world),
+            "warrior" => new NpcWarrior(spawnWorld, xPos, yPos),
+            "mage" => new NpcMage(spawnWorld, xPos, yPos),
+            "archer" => new NpcArcher(spawnWorld, xPos, yPos),
             _ => throw new ArgumentException("Invalid character type"),
         };
 
-        world.AddNPC(npc);
+        spawnWorld.AddNPC(npc);
         
         OnNpcCreated?.Invoke(npc);
 

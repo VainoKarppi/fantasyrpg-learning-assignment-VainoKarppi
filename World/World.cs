@@ -1,6 +1,5 @@
 
 public class GameInstance {
-    public static string[,]? WorldMap { get; set; }
 
     private static GameInstance? _instance;
 
@@ -14,10 +13,9 @@ public class GameInstance {
     public static event Action<World>? OnWorldCreated;
     
 
-    public GameInstance(int x, int y) {
+    public GameInstance() {
         if (_instance != null) throw new InvalidOperationException("Only one instance can be used!");
 
-        WorldMap = new string[x, y];
         _instance = this;
 
         PlayerActions.OnPlayerAction += HandlePlayerAction;
@@ -114,8 +112,24 @@ public class GameInstance {
 
 
 public class World {
+    public enum BuildingType {
+        Block, // No use (just a building block)
+        Shop,
+        Storage
+    }
+    public class Building(string name, int xPos, int yPos, int width = 100, int height = 100, BuildingType type = BuildingType.Block) {
+        public string Name { get; set; } = name;
+        public int X { get; set; } = xPos;
+        public int Y { get; set; } = yPos;
+        public int Width { get; set;} = width;
+        public int Height { get; set; } = height;
+        public BuildingType BuildingType { get; set; } = type;
+    }
+
     public string Name { get; set; }
     public List<NpcCharacter> NPCs { get; private set; } = [];
+
+    public List<Building> Buildings { get; private set; } = [];
 
     public int Tick { get; set; }
 
@@ -124,7 +138,6 @@ public class World {
     internal World(string worldName) {
         Name = worldName;
     }
-
 
     // Method to add an NPC to the world
     public List<NpcCharacter> AddNPC(NpcCharacter npc) {

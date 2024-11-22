@@ -12,10 +12,26 @@ public interface ICharacter {
     string Name { get; }
     int Health { get; }
     int Mana { get; }
+
+    public int X { get; set; }
+    public int Y { get; set; }
+    public int Width { get; }
+    public int Height { get; }
+    public Color Color => Color.Red;
+    public Rectangle Bounds => new Rectangle(X, Y, Width, Height);
 }
 
 
 public class Player : ICharacter {
+
+    public int X { get; set; } = GUI.GameForm.ScreenWidth / 2;
+    public int Y { get; set; } = GUI.GameForm.ScreenHeight / 2;
+    public int Width { get; set; } = 20;
+    public int Height { get; set; } = 20;
+    public Color Color => Color.Blue;
+    public Rectangle Bounds => new Rectangle(X, Y, Width, Height);
+
+
 
     public string Name { get; set; }
     public World CurrentWorld { get; internal set; }
@@ -32,7 +48,7 @@ public class Player : ICharacter {
     public int? Money { get; set; } = 0;
 
     // Items in Backpack
-    public List<object> InventoryItems { get; set; } = [];
+    public List<ItemBase> InventoryItems { get; set; } = [];
 
     public IPlayerActions PlayerActions{ get; set; }
 
@@ -87,6 +103,8 @@ public class Player : ICharacter {
     }
 
     public void ChangeWorld(World newWorld) {
+        X = GUI.GameForm.ScreenWidth / 2;
+        Y = GUI.GameForm.ScreenHeight / 2;
         CurrentWorld = newWorld;
     }
 
