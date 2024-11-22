@@ -5,29 +5,31 @@ public interface INpcActions {
 }
 
 
-public abstract class BaseNpcActions : INpcActions {
+public abstract class BaseNpcActions(NpcCharacter npc) : INpcActions {
     public static event Action<NpcCharacter>? OnNpcAction;
     public static event Action<Player, NpcCharacter, int>? OnNpcAttack;
     protected void RaiseNpcActionEvent() {
-        OnNpcAction?.Invoke(_npc);
+        OnNpcAction?.Invoke(npc);
     }
 
     protected void RaiseNpcAttackEvent(Player player, int damage) {
-        OnNpcAttack?.Invoke(player, _npc, damage);
+
+        player.Health -= damage;
+
+        OnNpcAttack?.Invoke(player, npc, damage);
+
+        if (player.Health <= 0) {
+            player.KillPlayer();
+        }
     }
 
-
-    protected NpcCharacter _npc;
-    protected BaseNpcActions(NpcCharacter npc) {
-        _npc = npc;
-    }
 
     public abstract void Attack(Player player);
     public abstract void UsePotion();
 
 
     public virtual int CalculateDamageToPlayer(Player player) {
-        
+        // TODO similiar to player attack, just dont use armor to calculate, instead use npc class
         return 20;
     }
 
@@ -37,15 +39,15 @@ public abstract class BaseNpcActions : INpcActions {
 
         World fightWorld = player.CurrentWorld;
 
-        Console.WriteLine($"{_npc.Name} is about to hit you!");
+        Console.WriteLine($"{npc.Name} is about to hit you!");
 
         // Start the countdown on a separate task
         Task countdownTask = Task.Run(() => {
-            for (int i = _npc.AttackTime; i > 0; i--) {
+            for (int i = npc.AttackTime; i > 0; i--) {
                 // Check if cancellation is requested or fight is canceled
                 if (cancellationToken.IsCancellationRequested || fightWorld != player.CurrentWorld) return;
 
-                Console.Write($"                   Attack incoming in: {i} seconds...   \r");
+                Console.Write($"Attack incoming in: {i} seconds...   \r");
                 Thread.Sleep(1000);
             }
         }, cancellationToken);
@@ -62,8 +64,7 @@ public abstract class BaseNpcActions : INpcActions {
             await Task.Delay(100); // Small delay to prevent tight loop
         }
 
-        if (cancellationToken.IsCancellationRequested || fightWorld != player.CurrentWorld)
-            return false;
+        if (cancellationToken.IsCancellationRequested || fightWorld != player.CurrentWorld) return false;
 
         return true;
     }
@@ -77,8 +78,6 @@ public class WarriorActions(NpcCharacter npc) : BaseNpcActions(npc) {
         if (!attackDone) return;
 
         int damage = CalculateDamageToPlayer(player);
-
-        Console.WriteLine("The Warrior hit you!");
 
         RaiseNpcAttackEvent(player, damage);
         RaiseNpcActionEvent();

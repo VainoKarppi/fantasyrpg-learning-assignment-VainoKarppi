@@ -7,29 +7,25 @@ public interface IPlayerActions {
     int CalculateDamageToNPC(NpcCharacter target);
 }
 
-public abstract class BasePlayerActions : IPlayerActions {
-    protected Player _player;
-    protected BasePlayerActions(Player player) {
-        _player = player;
-    }
+public abstract class BasePlayerActions(Player player) : IPlayerActions {
 
     public abstract void Attack(NpcCharacter target);
     public abstract void UsePotion(ItemPotion potion);
 
     public virtual bool HasWeapon() {
-        return _player.CurrentWeapon != null;
+        return player.CurrentWeapon != null;
     }
 
     public virtual bool HasArmor() {
-        return _player.CurrentArmor != null;
+        return player.CurrentArmor != null;
     }
 
 
     public virtual int CalculateDamageToNPC(NpcCharacter npc) {
         if (!HasWeapon()) throw new Exception("No weapon in use!");
         
-        ItemWeapon playerWeapon = _player.CurrentWeapon!;
-        ItemArmor? playerArmor = _player.CurrentArmor;
+        ItemWeapon playerWeapon = player.CurrentWeapon!;
+        ItemArmor? playerArmor = player.CurrentArmor;
 
         double baseDamage = playerWeapon.Damage;
 
@@ -70,12 +66,22 @@ public class PlayerActions(Player player) : BasePlayerActions(player) {
     public override void Attack(NpcCharacter target) {
         int damage = CalculateDamageToNPC(target);
 
-        OnPlayerAttack?.Invoke(_player, target, damage);
-        OnPlayerAction?.Invoke(_player);
+        player.PlayerStatistics.DamageDealt += damage;
+
+        target.Health -= damage;
+
+        
+
+        OnPlayerAttack?.Invoke(player, target, damage);
+
+        // Kill enemy before triggering next action, to make sure the world NPC count gets to 0 before next attack if necessary
+        if (target.Health <= 0) target.KillNPC(player);
+
+        OnPlayerAction?.Invoke(player);
     }
 
     public override void UsePotion(ItemPotion potion) {
-        OnPlayerPotionUse?.Invoke(_player, potion);
-        OnPlayerAction?.Invoke(_player);
+        OnPlayerPotionUse?.Invoke(player, potion);
+        OnPlayerAction?.Invoke(player);
     }
 }

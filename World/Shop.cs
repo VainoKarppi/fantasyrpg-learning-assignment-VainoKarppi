@@ -32,20 +32,20 @@ public class Shop {
     }
 
 
-    public void BuyItem(Player player, IBuyable itemTobuy) {
+    public static void BuyItem(Player player, IBuyable itemTobuy) {
 
         player.AddItem(itemTobuy);
 
         player.Money -= itemTobuy.BuyPrice;
     }
 
-    public void SellItem(Player player, ISellable item) {
+    public static void SellItem(Player player, ISellable item) {
         if (!player.RemoveItem(item)) throw new Exception("This item cannot be sold!");
 
         player.Money += item.SellPrice;
     }
 
-    public Dictionary<ISellable,int> GetSellableItems(Player player) {
+    public static Dictionary<ISellable,int> GetSellableItems(Player player) {
         Dictionary<ISellable,int> sellableItems = [];
 
         foreach (object item in player.InventoryItems) {
@@ -60,7 +60,7 @@ public class Shop {
         return sellableItems;
     }
 
-    public List<IBuyable> GetBuyableItems() {
+    public static List<IBuyable> GetBuyableItems() {
         List<IBuyable> buyableItems = [];
 
         // Get all the items that have IBuyable interface applied to them

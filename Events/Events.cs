@@ -1,4 +1,3 @@
-using System.Reflection.Metadata;
 
 public class GameEventListener {
     public GameEventListener() {
@@ -12,21 +11,33 @@ public class GameEventListener {
         PlayerActions.OnPlayerAction += HandlePlayerAction;
         PlayerActions.OnPlayerPotionUse += HandlePotionUse;
 
+        Player.OnPlayerKilled += HandlePlayerKilled;
+        Player.OnPlayerCreated += HandlePlayerCreated;
+
         BaseNpcActions.OnNpcAction += HandleNpcAction;
         BaseNpcActions.OnNpcAttack += HandleNpcAttack;
 
-    
-
-        IQuest.OnQuestUpdated += HandleQuestUpdated;
-        IQuest.OnQuestEnded += HandleQuestEnded;
+        Quests.OnQuestCreated += HandleQuestCreated;
+        Quests.OnQuestUpdated += HandleQuestUpdated;
+        Quests.OnQuestEnded += HandleQuestEnded;
     }
 
 
+    private void HandleQuestCreated(IQuest quest) {
+        Console.WriteLine($"Quest received! ({quest.Name}) - {quest.Description}");
+    }
     private void HandleQuestUpdated(IQuest quest) {
-        Console.WriteLine($"Current stage: {quest.StageDescription}");
+        Console.WriteLine($"Quest status updated! ({quest.StageDescription})");
     }
     private void HandleQuestEnded(IQuest quest, bool succes) {
-        Console.WriteLine($"Current stage: {quest.StageDescription}");
+        Console.WriteLine($"Quest {quest.Name} ended!");
+
+        if (succes) {
+            Console.WriteLine("Quest rewards added to your inventory!");
+            foreach (KeyValuePair <ItemBase, int> reward in quest.RewardList) {
+                Console.WriteLine($"    - {reward.Key.Name} - (x{reward.Value})");
+            }
+        }
     }
 
     private void HandleWorldChanged(World oldworld, World newWorld) {
@@ -37,31 +48,30 @@ public class GameEventListener {
     }
 
 
+    private void HandlePlayerKilled(Player player, ICharacter? killer) {
+        if (killer != null) {
+            Console.WriteLine($"You were killed by: {killer.Name}");
+        } else {
+            Console.WriteLine("You died!");
+        }
+    }
+    private void HandlePlayerCreated(Player player) {
+    }
+
 
     private void HandleNpcCreated(NpcCharacter npc) {
 
     }
     private void HandleNpcAttack(Player player, NpcCharacter npc, int damage) {
         Console.WriteLine($"{npc.Name} hit you! You took {damage} damage!");
-        player.Health -= damage;
-
-        if (player.Health <= 0) {
-            Console.WriteLine("You died!");
-            
-            player.CurrentArmor = null;
-            player.CurrentWeapon = new MeleeWeapon.Fists();
-            player.InventoryItems.Clear();
-            player.Health = 100;
-
-            World homeWorld = GameInstance.Worlds.First(x => x.IsSafeWorld);
-            player.ChangeWorld(homeWorld);
-        }
     }
     private void HandleNpcAction(NpcCharacter npc) {
         Console.WriteLine("Its your turn!");
     }
-    private void HandleNpcKilled(Player? player, NpcCharacter npc) {
-        if (player == null) return;
+    private void HandleNpcKilled(NpcCharacter npc, Player? player) {
+        if (player == null) return; // Check if it was killed by a player
+
+        Console.WriteLine($"Enemy Killed!");
 
         ItemDrop? itemDrop = DropManager.GetRandomDrop();
         if (itemDrop is null) {
@@ -72,22 +82,11 @@ public class GameEventListener {
         }
     }
 
-    private void HandleNpcAttacked(Player player, NpcCharacter npc, int damage) {
-
-    }
 
 
 
     private void HandlePlayerAttack(Player player, NpcCharacter npc, int damage) {
-        npc.Health -= damage;
-        player.PlayerStatistics.DamageDealt += damage;
-        
-        if (npc.Health <= 0) {
-            Console.WriteLine($"Enemy Killed! Damage dealt: {damage}");
-            npc.KillNPC(player);
-        } else {
-            Console.WriteLine($"You've hit {npc.Name} with {player.CurrentWeapon?.Name}: Damage dealt: {damage}");
-        }
+        Console.WriteLine($"You've hit {npc.Name} with {player.CurrentWeapon?.Name}: Damage dealt: {damage}");
     }
     private void HandlePlayerAction(Player player) {
     }

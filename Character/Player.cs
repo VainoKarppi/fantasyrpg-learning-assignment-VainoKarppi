@@ -1,9 +1,27 @@
 
+public static class IDGenerator {
+    private static int idIndex = 0;
 
-public class Player {
+    public static int GenerateId() {
+        return ++idIndex;
+    }
+}
 
-    public string PlayerName { get; set; }
+public interface ICharacter {
+    int ID { get; }
+    string Name { get; }
+    int Health { get; }
+    int Mana { get; }
+}
+
+
+public class Player : ICharacter {
+
+    public string Name { get; set; }
     public World CurrentWorld { get; internal set; }
+
+    public int ID { get; } = IDGenerator.GenerateId();
+    
 
     public int Health { get; set; } = 100;
     public int Mana { get; set; } = 100;
@@ -21,6 +39,10 @@ public class Player {
     public List<IQuest> QuestList { get; set; } = [];
     public IQuest? CurrentQuest { get; set; }
 
+    //--- EVENTS
+    public static event Action<Player, ICharacter?>? OnPlayerKilled;
+    public static event Action<Player>? OnPlayerCreated;
+
 
     public Statistics PlayerStatistics { get; private set; } = new Statistics();
     public class Statistics {
@@ -36,11 +58,32 @@ public class Player {
     public Player(World startWorld, string playerName = "Player") {
         
         CurrentWorld = startWorld;
-        PlayerName = playerName;
+        Name = playerName;
         PlayerActions = new PlayerActions(this);
         GameInstance.AddPlayerToInstance(this);
 
         CurrentWeapon = new MeleeWeapon.Fists();
+
+        OnPlayerCreated?.Invoke(this);
+    }
+
+    
+    public void KillPlayer(ICharacter? killer = null) {
+        PlayerStatistics.DeathsCount++;
+
+        OnPlayerKilled?.Invoke(this, killer);
+        
+        ResetPlayer();
+    }
+
+    private void ResetPlayer() {
+        CurrentArmor = null;
+        CurrentWeapon = new MeleeWeapon.Fists();
+        InventoryItems.Clear();
+        Health = 100;
+
+        World homeWorld = GameInstance.Worlds.First(x => x.IsSafeWorld);
+        ChangeWorld(homeWorld);
     }
 
     public void ChangeWorld(World newWorld) {
@@ -117,5 +160,13 @@ public class Player {
         if (CurrentQuest == null) CurrentQuest = quest;
         
         QuestList.Add(quest);
+    }
+
+    public bool RemoveQuest(IQuest quest) {
+        bool removed = QuestList.Remove(quest);
+
+        if (removed) CurrentQuest = null;
+
+        return removed;
     }
 }

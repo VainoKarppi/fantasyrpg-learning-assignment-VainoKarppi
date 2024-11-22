@@ -1,6 +1,4 @@
 
-using System.Text.Json;
-
 public class GameInstance {
     public static string[,]? WorldMap { get; set; }
 
@@ -70,12 +68,12 @@ public class GameInstance {
     public static bool RemovePlayerFromInstance(Player player) {
         if (_instance == null) throw new InvalidOperationException("Instance not found!");
 
-        int removed = Players.RemoveAll(x => x.PlayerName == player.PlayerName);
+        int removed = Players.RemoveAll(x => x.Name == player.Name);
         return removed > 0;
     }
     
 
-    public void DisplayWorlds() {
+    public static void DisplayWorlds() {
         Console.WriteLine($"------WORLDS------");
         foreach (var world in Worlds) {
             Console.WriteLine($"{world.Name} NPCs:{world.NPCs.Count} Tick:{world.Tick}");
@@ -83,7 +81,7 @@ public class GameInstance {
         Console.WriteLine($"------------------");
     }
 
-    public World CreateWorld(string name) {
+    public static World CreateWorld(string name) {
         World world = new World(name);
 
         Worlds.Add(world);
@@ -101,11 +99,11 @@ public class GameInstance {
         DeleteWorld(GetWorld(name));
     }
 
-    public void DeleteWorld(World world) {
+    public static void DeleteWorld(World world) {
         Worlds.Remove(world);
     }
 
-    public void ChangeWorld(Player player, World newWorld) {
+    public static void ChangeWorld(Player player, World newWorld) {
         player.CurrentWorld = newWorld;
 
         OnPlayerWorldChanged?.Invoke(player.CurrentWorld, newWorld);

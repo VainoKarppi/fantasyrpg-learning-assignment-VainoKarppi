@@ -2,12 +2,12 @@
 GameInstance instance = new GameInstance(2,2);
 
 // Initialize worlds
-World homeWorld = instance.CreateWorld("Home");
+World homeWorld = GameInstance.CreateWorld("Home");
 homeWorld.IsSafeWorld = true;
 
-World forestWorld = instance.CreateWorld("Forest");
-World castleWorld = instance.CreateWorld("Castle");
-World caveWorld = instance.CreateWorld("Cave");
+World forestWorld = GameInstance.CreateWorld("Forest");
+World castleWorld = GameInstance.CreateWorld("Castle");
+World caveWorld = GameInstance.CreateWorld("Cave");
 
 
 
@@ -53,7 +53,10 @@ while (true) {
 Player player = new Player(homeWorld, playerName);
 player.Money = 600;
 
+
+// Add quest to test
 player.AddQuest(new Quests.Massacare(player));
+
 
 Console.WriteLine($"Welcome {player}. Type 'Help' for commands, and for intructions for how to play.");
 Console.WriteLine("You can access SHOP by typing: 'shop'. This can be only accessed in Home town.");
@@ -82,7 +85,7 @@ while (true) {
         if (command == "inventory") player.DisplayInventory();
 
         if (command == "world") player.CurrentWorld.DisplayWorldState();
-        if (command == "worlds") instance.DisplayWorlds();
+        if (command == "worlds") GameInstance.DisplayWorlds();
         if (command == "changeworld") ChangeWorld();
 
         if (command == "potion") UsePotion();
@@ -102,6 +105,24 @@ while (true) {
 }
 
 
+Task ReadKeyInput(CancellationToken cancellationToken) {
+    while (!cancellationToken.IsCancellationRequested && !player.CurrentWorld.IsSafeWorld) {
+        var keyInfo = Console.ReadKey(intercept: true);
+        if (keyInfo.Key == ConsoleKey.A) {
+            // Attack
+        }
+
+        if (keyInfo.Key == ConsoleKey.D) {
+            // Defend
+        }
+
+        if (keyInfo.Key == ConsoleKey.UpArrow) {
+            // Attack
+        }
+    }
+
+    return Task.CompletedTask;
+}
 
 
 
@@ -192,7 +213,7 @@ void OpenShop() {
         // SELL
         if (mode == "sell") {
             
-            Dictionary<ISellable, int> sellableItems = shop.GetSellableItems(player);
+            Dictionary<ISellable, int> sellableItems = Shop.GetSellableItems(player);
 
             if (sellableItems.Count == 0) {
                 Console.WriteLine("No items to sell!");
@@ -213,7 +234,7 @@ void OpenShop() {
                     
                     ISellable itemToSell = sellableItems.Keys.ElementAt(itemIndex);
 
-                    shop.SellItem(player, itemToSell);
+                    Shop.SellItem(player, itemToSell);
                     Console.WriteLine($"Sell succesfull! You gained: {itemToSell.SellPrice}. Money: {player.Money}");
 
                     break;
@@ -239,7 +260,7 @@ void OpenShop() {
                 IBuyable itemToBuy = shop.ItemsForSale[itemIndex];
 
                 if (player.Money < itemToBuy.BuyPrice) throw new NotEnoughMoneyException("Not enough money!");
-                shop.BuyItem(player, itemToBuy);
+                Shop.BuyItem(player, itemToBuy);
 
                 Console.WriteLine($"You bought: {itemToBuy.Name} for {itemToBuy.BuyPrice} Coins. Money: {player.Money}");
                 break;
@@ -260,7 +281,7 @@ void ChangeWorld() {
 
     try {  
         World newWorld = GameInstance.GetWorld(newWorldName);
-        instance.ChangeWorld(player, newWorld);
+        GameInstance.ChangeWorld(player, newWorld);
 
 
         Console.WriteLine($"Change world to: {newWorld.Name}");
@@ -308,6 +329,8 @@ void UsePotion() {
 void Attack() {
     if (player.CurrentWorld.IsSafeWorld) throw new Exception("You cannot be in home world while performing this operation!");
     if (!player.CurrentWorld.IsPlayerTurn()) throw new Exception("It's not your turn yet!");
+    if (player.CurrentWorld.NPCs.Count <= 0) throw new Exception("No enemies left!");
+
 
     Console.WriteLine("Select target to attack, or use 'exit'");
 
