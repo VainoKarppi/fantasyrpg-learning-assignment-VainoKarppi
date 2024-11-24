@@ -55,26 +55,233 @@ public partial class GameForm : Form {
     }
     private void DrawInventory(Graphics g) {
         int statsBarTop = ClientSize.Height - StatsBarHeight;
-        int questBoxLeft = ClientSize.Width / 2;
-        int questBoxWidth = ClientSize.Width / 2;
+        int inventoryBoxLeft = ClientSize.Width / 2; // Left edge of the third box (left half of the stats bar)
+        int inventoryBoxWidth = ClientSize.Width / 4; // Only one quarter of the width
 
-        // Draw quest and inventory background
-        g.FillRectangle(Brushes.Black, questBoxLeft, statsBarTop, questBoxWidth, StatsBarHeight);
+        // Draw inventory background
+        g.FillRectangle(Brushes.Black, inventoryBoxLeft, statsBarTop, inventoryBoxWidth, StatsBarHeight);
 
         var font = new Font("Arial", 10, FontStyle.Bold);
         var brush = Brushes.White;
         int padding = 10;
 
-        // Display inventory
+        // Display inventory title
         string inventoryTitle = "Inventory:";
-        g.DrawString(inventoryTitle, font, brush, questBoxLeft + padding, statsBarTop + padding);
+        g.DrawString(inventoryTitle, font, brush, inventoryBoxLeft + padding, statsBarTop + padding);
 
-        // Draw inventory items as a scrollable list
+        // Group items by name and count their quantities
+        var groupedItems = player.InventoryItems
+            .GroupBy(item => item.Name)
+            .Select(group => new { Name = group.Key, Count = group.Count() });
+
+        // Draw grouped inventory items
         int inventoryY = statsBarTop + padding + 20;
-        foreach (ItemBase item in player.InventoryItems) {
-            g.DrawString($"\t{item.Name}", font, brush, questBoxLeft + padding, inventoryY);
+        foreach (var groupedItem in groupedItems) {
+            // Format item display as "ItemName xCount" if quantity > 1
+            string? itemDisplay = groupedItem.Count > 1 
+                ? $"{groupedItem.Name} (x{groupedItem.Count})" 
+                : groupedItem.Name;
+
+            if (itemDisplay == null) continue;
+
+            g.DrawString(itemDisplay, font, brush, inventoryBoxLeft + padding, inventoryY);
             inventoryY += 20;
-            if (inventoryY > statsBarTop + StatsBarHeight - 20) break; // Ensure items fit in the box
+
+            // Ensure items fit within the inventory box
+            if (inventoryY > statsBarTop + StatsBarHeight - 20) break;
         }
+    }
+
+
+    private List<Button> buttonsNew = new List<Button>();
+
+    private void InitializeButtons() {
+        int paddingRight = 10;  // Padding to the right side of the button area
+        int buttonAreaWidth = ScreenWidth / 4 - paddingRight;   // 1/4 of the screen width minus padding
+        int buttonAreaHeight = ScreenHeight / 4 + 13;           // 1/4 of the screen height
+        int buttonAreaLeft = ScreenWidth - buttonAreaWidth - paddingRight; // Right side with padding
+        int buttonAreaTop = ScreenHeight - buttonAreaHeight;    // Bottom of the screen
+
+        // Define button list with action handlers
+        var buttons = new List<(string Name, Action Action)> {
+            ("Help (H)", ShowHelp),
+            ("Change Weapon (C)", ChangeWeapon),
+            ("Change Armor (K)", ChangeArmor),
+            ("Use Potion (P)", UsePotion),
+            ("Change Quest (Q)", ChangeQuest),
+            ("Stats (N)", ShowStats)
+        };
+
+        int buttonPadding = 5;   // Reduced padding for closer spacing between buttons
+        int buttonWidth = buttonAreaWidth - 20;   // Width minus padding for button text alignment
+        int buttonHeight = 28;    // Height of each button
+
+        int currentY = buttonAreaTop + buttonPadding;  // Start position for buttons
+
+        // Create the buttons once and store them in the list
+        foreach (var (name, action) in buttons) {
+            Button button = new Button {
+                Text = name,
+                Width = buttonWidth,
+                Height = buttonHeight,
+                Location = new Point(buttonAreaLeft + 10, currentY) // Place on the right bottom with padding
+            };
+
+            // Handle button click event
+            button.Click += (sender, e) => action?.Invoke();
+
+            // Add the button to the list (not to Controls yet)
+            buttonsNew.Add(button);
+
+            // Update the Y-position for the next button
+            currentY += buttonHeight + buttonPadding; // Vertical spacing for buttons
+        }
+    }
+
+    private void DrawButtons(Graphics g) {
+        int paddingRight = 10; // Padding to the right side of the button area
+        int buttonAreaWidth = ScreenWidth / 4 - paddingRight;   // 1/4 of the screen width minus padding
+        int buttonAreaHeight = ScreenHeight / 4 + 14;           // 1/4 of the screen height
+        int buttonAreaLeft = ScreenWidth - buttonAreaWidth - paddingRight; // Right side with padding
+        int buttonAreaTop = ScreenHeight - buttonAreaHeight;    // Bottom of the screen
+
+        // Draw button area background
+        g.FillRectangle(Brushes.Gray, buttonAreaLeft, buttonAreaTop, buttonAreaWidth, buttonAreaHeight);
+
+        // Draw black padding area to the right
+        g.FillRectangle(Brushes.Black, buttonAreaLeft + buttonAreaWidth, buttonAreaTop, paddingRight, buttonAreaHeight);
+
+        // Draw each button (from the pre-created list)
+        foreach (var button in buttonsNew) {
+            button.Location = new Point(buttonAreaLeft + 10, button.Location.Y);  // Adjust position if necessary
+            button.Size = new Size(buttonAreaWidth - 20, 28);  // Adjust size if necessary
+
+            // Only add the button to the controls collection once (if it's not added already)
+            if (!Controls.Contains(button)) {
+                Controls.Add(button);
+            }
+        }
+    }
+
+
+
+    // Button actions
+    private async void ShowHelp() {
+        // Show help asynchronously
+        await Task.Run(() => MessageBox.Show("This is the Help menu. Provide instructions here.", "Help"));
+        // After the message box closes, ensure the game form gets focus again
+        Focus();
+    }
+
+    private void OpenItemChangeForm<T>(string formTitle, List<T> items, Action<T> onItemSelected, string itemType = "this type of items", string selectText = "Equip") where T : class {
+        // Create a new form to list the player's inventory items
+        Form changeForm = new Form() {
+            Text = formTitle,
+            ClientSize = new Size(400, 500), // Adjust the size
+            FormBorderStyle = FormBorderStyle.FixedDialog,
+            MaximizeBox = false,
+            StartPosition = FormStartPosition.CenterScreen
+        };
+
+        try {
+            // Create a FlowLayoutPanel to list the items and buttons
+            FlowLayoutPanel itemPanel = new FlowLayoutPanel() {
+                Dock = DockStyle.Fill,
+                AutoScroll = true
+            };
+
+            changeForm.Controls.Add(itemPanel);
+
+            if (items.Count == 0) throw new Exception($"No {itemType} in inventory!");
+
+            // Create buttons for each item and add them to the panel
+            foreach (var item in items) {
+                // Create a new FlowLayoutPanel for each item row
+                FlowLayoutPanel itemRow = new FlowLayoutPanel() {
+                    FlowDirection = FlowDirection.LeftToRight,
+                    Width = itemPanel.ClientSize.Width - 20,
+                    Height = 50,
+                    AutoSize = true,
+                    WrapContents = false,
+                    Padding = new Padding(5)
+                };
+
+                // Create label based on item type (Weapon, Armor, Potion, Quest)
+                Label itemLabel = new Label() {
+                    Text = GetItemLabel(item),
+                    Width = 200, // Label width
+                    TextAlign = ContentAlignment.MiddleLeft
+                };
+
+                // Button to select the item
+                Button selectItemButton = new Button() {
+                    Text = selectText,
+                    AutoSize = true,
+                    TextAlign = ContentAlignment.MiddleCenter
+                };
+
+                // Button click event to handle item selection
+                selectItemButton.Click += (sender, e) => {
+                    onItemSelected(item); // Trigger the item action
+                    changeForm.Close(); // Close the form
+                };
+
+                // Add the label and button to the row
+                itemRow.Controls.Add(itemLabel);
+                itemRow.Controls.Add(selectItemButton);
+
+                // Add the row to the panel
+                itemPanel.Controls.Add(itemRow);
+            }
+
+            // Show the form modally to wait for user selection
+            changeForm.ShowDialog();
+        } catch (Exception ex) {
+            MessageBox.Show(ex.Message);
+            changeForm.Close(); // Close the form if an error occurs
+        }
+    }
+
+    private string GetItemLabel<T>(T item) {
+        if (item is ItemWeapon weapon)
+            return $"{weapon.Name} (Attack Power: {weapon.Damage})";
+        else if (item is ItemArmor armor)
+            return $"{armor.Name} (Defense: {armor.Defense})";
+        else if (item is ItemPotion potion)
+            return $"{potion.Name} (+{potion.Effect})";
+        else if (item is IQuest quest)
+            return $"{quest.Name} ({quest.Description})";
+        else
+            return "Unknown Item";
+    }
+
+    private void ChangeWeapon() {
+        OpenItemChangeForm("Change Weapon", player.GetInventoryWeapons(), player.ChangeWeapon, "weapons");
+    }
+
+    private void ChangeArmor() {
+        OpenItemChangeForm("Change Armor", player.GetInventoryArmors(), player.ChangeArmor, "armors");
+    }
+
+    private void UsePotion() {
+        OpenItemChangeForm("Use Potion", player.GetInventoryPotions(), player.PlayerActions.UsePotion, "potions", "Use");
+    }
+
+    private void ChangeQuest() {
+        var availableQuests = player.QuestList.Where(q => q != player.CurrentQuest).ToList();
+
+        if (availableQuests.Count == 0) {
+            MessageBox.Show("No other quests available!");
+            return;
+        }
+
+        OpenItemChangeForm("Change Quest", availableQuests, (quest) => {
+            player.CurrentQuest = quest;
+        }, "quests", "Select");
+    }
+    
+
+    private static void ShowStats() {
+        MessageBox.Show("Showing Stats!", "Stats");
     }
 }

@@ -24,7 +24,7 @@ public class GameEventListener {
 
 
     private void HandleQuestCreated(IQuest quest) {
-        Console.WriteLine($"Quest received! ({quest.Name}) - {quest.Description}");
+        Console.WriteLine($"Quest received! |{quest.Name}| - ({quest.Description}) for player: {quest.QuestOwner.Name}");
     }
     private void HandleQuestUpdated(IQuest quest) {
         Console.WriteLine($"Quest status updated! ({quest.StageDescription})");
@@ -40,11 +40,11 @@ public class GameEventListener {
         }
     }
 
-    private void HandleWorldChanged(World oldworld, World newWorld) {
-
+    private void HandleWorldChanged(IWorldChanger unit, World oldworld, World newWorld) {
+        Console.WriteLine($"{unit} changed World: {newWorld.Name} from {oldworld.Name}");
     }
     private void HandleWorldCreated(World world) {
-
+        Console.WriteLine($"Created world: {world.Name}");
     }
 
 
@@ -56,11 +56,12 @@ public class GameEventListener {
         }
     }
     private void HandlePlayerCreated(Player player) {
+        Console.WriteLine($"Created Player: {player.Name}");
     }
 
 
     private void HandleNpcCreated(NpcCharacter npc) {
-
+        Console.WriteLine($"Created NPC: {npc.Name} to World: {npc.CurrentWorld.Name}");
     }
     private void HandleNpcAttack(Player player, NpcCharacter npc, int damage) {
         Console.WriteLine($"{npc.Name} hit you! You took {damage} damage!");
@@ -73,6 +74,8 @@ public class GameEventListener {
 
         Console.WriteLine($"Enemy Killed!");
 
+
+        // TODO move elsewhere?
         ItemDrop? itemDrop = DropManager.GetRandomDrop();
         if (itemDrop is null) {
             Console.WriteLine("No drop!");
@@ -96,18 +99,24 @@ public class GameEventListener {
 
         // Health potion
         if (potion is ItemPotion.HealthPotion) {
-            if (player.Health == 100) throw new Exception("Already full health!");
+            if (player.Health == 100) {
+                MessageBox.Show("Already full health!");
+                return;
+            }
 
-            player.Health = Math.Min(player.Health + 20, 100);
+            player.Health = Math.Min(player.Health + potion.Effect, 100);
             Console.WriteLine($"Health potion used! Health: {player.Health}");
         }
 
 
         // Mana potion
         if (potion is ItemPotion.ManaPotion) {
-            if (player.Mana == 100) throw new Exception("Already full mana!");
+            if (player.Mana == 100) {
+                MessageBox.Show("Already full mana!");
+                return;
+            }
         
-            player.Mana = Math.Min(player.Mana + 20, 100);
+            player.Mana = Math.Min(player.Mana + potion.Effect, 100);
             Console.WriteLine($"Mana potion used! Mana: {player.Mana}");   
         }
 

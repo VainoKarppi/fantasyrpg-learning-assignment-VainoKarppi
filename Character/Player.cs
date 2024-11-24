@@ -9,7 +9,7 @@ public static class IDGenerator {
 
 public interface ICharacter {
     int ID { get; }
-    string Name { get; }
+    string? Name { get; }
     int Health { get; }
     int Mana { get; }
 
@@ -22,7 +22,7 @@ public interface ICharacter {
 }
 
 
-public class Player : ICharacter {
+public class Player : ICharacter, IWorldChanger {
 
     public int X { get; set; } = GUI.GameForm.ScreenWidth / 2;
     public int Y { get; set; } = GUI.GameForm.ScreenHeight / 2;
@@ -34,7 +34,7 @@ public class Player : ICharacter {
 
 
     public string Name { get; set; }
-    public World CurrentWorld { get; internal set; }
+    public World CurrentWorld { get; set; }
 
     public int ID { get; } = IDGenerator.GenerateId();
     
@@ -98,18 +98,32 @@ public class Player : ICharacter {
         InventoryItems.Clear();
         Health = 100;
 
+        X = GUI.GameForm.ScreenWidth / 2;
+        Y = GUI.GameForm.ScreenHeight / 2; 
+
         World homeWorld = GameInstance.Worlds.First(x => x.IsSafeWorld);
         ChangeWorld(homeWorld);
     }
 
     public void ChangeWorld(World newWorld) {
-        X = GUI.GameForm.ScreenWidth / 2;
-        Y = GUI.GameForm.ScreenHeight / 2;
-        CurrentWorld = newWorld;
-    }
+        if (newWorld == null || !GameInstance.Worlds.Contains(newWorld)) return;
 
-    public virtual void DisplayStats() {
-        Console.WriteLine($"Health: {Health}, Mana: {Mana}, Money: {Money}, CurrentWeapon: {CurrentWeapon?.Name}, CurrentArmor: {CurrentArmor?.Name}");
+        // Get the indices of the current and new worlds
+        int currentIndex = GameInstance.Worlds.IndexOf(CurrentWorld);
+        int newIndex = GameInstance.Worlds.IndexOf(newWorld);
+
+        // Moving from left to right
+        if (newIndex > currentIndex) {
+            X = Width;
+        } else {
+            X = GUI.GameForm.ScreenWidth - (Width + 40);
+        }
+        
+
+        if (currentIndex == -1 || newIndex == -1) return;
+        
+        // Update the player's current world
+        GameInstance.ChangeWorld(this, newWorld);
     }
 
     public void AddItem(dynamic item) {
@@ -130,7 +144,7 @@ public class Player : ICharacter {
         return InventoryItems.Remove(item);
     }
 
-    public virtual void DisplayInventory() {
+    public virtual void DebugDisplayInventory() {
         Console.WriteLine("-------------------");
         Console.WriteLine($"({InventoryItems.Count}) Items:");
 
@@ -160,15 +174,30 @@ public class Player : ICharacter {
             return;
         }
  
-        // If weapon is fist -> dont add it to inventory +
         // Move old weapon to inventory and select new weapon
-        if (CurrentWeapon is not MeleeWeapon.Fists) InventoryItems.Add(CurrentWeapon);
+        if (CurrentWeapon != null) InventoryItems.Add(CurrentWeapon);
         
         try {
             InventoryItems.Remove(newWeapon);
         } catch (Exception) {}
         
         CurrentWeapon = newWeapon;
+    }
+
+    public void ChangeArmor(ItemArmor newArmor) {
+        if (CurrentArmor == null) {
+            CurrentArmor = newArmor;
+            return;
+        }
+
+        // Return equiped armor to inventory
+        if (CurrentArmor != null) InventoryItems.Add(CurrentArmor);
+
+        try {
+            InventoryItems.Remove(newArmor);
+        } catch (Exception) {}
+        
+        CurrentArmor = newArmor;
     }
 
 
@@ -186,5 +215,24 @@ public class Player : ICharacter {
         if (removed) CurrentQuest = null;
 
         return removed;
+    }
+
+    public List<T> GetInventoryItems<T>() where T : class {
+        return InventoryItems
+            .Where(item => item is T)
+            .Cast<T>()
+            .ToList();
+    }
+
+    public List<ItemPotion> GetInventoryPotions() {
+        return GetInventoryItems<ItemPotion>();
+    }
+
+    public List<ItemWeapon> GetInventoryWeapons() {
+        return GetInventoryItems<ItemWeapon>();
+    }
+
+    public List<ItemArmor> GetInventoryArmors() {
+        return GetInventoryItems<ItemArmor>();
     }
 }

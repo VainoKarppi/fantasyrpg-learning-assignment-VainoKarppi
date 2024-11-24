@@ -10,10 +10,6 @@ public class NpcWarrior : NpcCharacter {
         Armor = new MetalArmor();
         NpcActions = new WarriorActions(this);
     }
-
-    public override void DisplayCharacterStats() {
-        Console.WriteLine($"Warrior Stats - Health: {Health}, Mana: {Mana}, Strength: {Strength}, Agility: {Agility}");
-    }
 }
 
 public class NpcMage : NpcCharacter {
@@ -26,10 +22,6 @@ public class NpcMage : NpcCharacter {
         Armor = new MageRobe();
         NpcActions = new MageActions(this);
     }
-
-    public override void DisplayCharacterStats() {
-        Console.WriteLine($"Mage Stats - Health: {Health}, Mana: {Mana}, Strength: {Strength}, Agility: {Agility}");
-    }
 }
 
 public class NpcArcher : NpcCharacter {
@@ -41,9 +33,5 @@ public class NpcArcher : NpcCharacter {
         Agility = 80;
         Armor = new LeatherArmor();
         NpcActions = new RangerActions(this);
-    }
-
-    public override void DisplayCharacterStats() {
-        Console.WriteLine($"Archer Stats - Health: {Health}, Mana: {Mana}, Strength: {Strength}, Agility: {Agility}");
     }
 }

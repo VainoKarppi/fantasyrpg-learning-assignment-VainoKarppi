@@ -1,7 +1,7 @@
 
 // Base Character Class
-public abstract class NpcCharacter : ICharacter {
-    public string Name { get; set; }
+public partial class NpcCharacter : ICharacter, IWorldChanger {
+    public string? Name { get; set; }
     public int Health { get; set; }
     public int Mana { get; set; }
     public int Strength { get; set; }
@@ -26,7 +26,7 @@ public abstract class NpcCharacter : ICharacter {
 
     public INpcActions? NpcActions { get; set; }
 
-    public World CurrentWorld { get; private set; }
+    public World CurrentWorld { get; set; }
 
     // Events
     public static event Action<NpcCharacter>? OnNpcCreated;
@@ -41,9 +41,6 @@ public abstract class NpcCharacter : ICharacter {
 
         Armor = new ItemArmor();
     }
-
-    public abstract void DisplayCharacterStats();
-
     public void TransferWorld(World newWorld) {
         if (newWorld == null) {
             throw new ArgumentNullException(nameof(newWorld), "New world cannot be null.");
@@ -65,13 +62,13 @@ public abstract class NpcCharacter : ICharacter {
 
 
 
-    public static NpcCharacter CreateNPC(string npcType, World spawnWorld, int xPos, int yPos) {
+    public static NpcCharacter CreateNPC(string npcType, World spawnWorld, (int xPos, int yPos) position) {
         if (spawnWorld == null) throw new ArgumentNullException(nameof(spawnWorld), "World cannot be null when creating an NPC.");
 
         NpcCharacter npc = npcType.ToLower() switch {
-            "warrior" => new NpcWarrior(spawnWorld, xPos, yPos),
-            "mage" => new NpcMage(spawnWorld, xPos, yPos),
-            "archer" => new NpcArcher(spawnWorld, xPos, yPos),
+            "warrior" => new NpcWarrior(spawnWorld, position.xPos, position.yPos),
+            "mage" => new NpcMage(spawnWorld, position.xPos, position.yPos),
+            "archer" => new NpcArcher(spawnWorld, position.xPos, position.yPos),
             _ => throw new ArgumentException("Invalid character type"),
         };
 

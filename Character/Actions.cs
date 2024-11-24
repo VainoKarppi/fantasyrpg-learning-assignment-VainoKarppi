@@ -63,25 +63,26 @@ public class PlayerActions(Player player) : BasePlayerActions(player) {
     public static event Action<Player, ItemPotion>? OnPlayerPotionUse;
     public static event Action<Player>? OnPlayerAction;
 
+    private readonly Player _player = player;
+
     public override void Attack(NpcCharacter target) {
         int damage = CalculateDamageToNPC(target);
 
-        player.PlayerStatistics.DamageDealt += damage;
+        _player.PlayerStatistics.DamageDealt += damage;
 
         target.Health -= damage;
 
-        
 
-        OnPlayerAttack?.Invoke(player, target, damage);
+        OnPlayerAttack?.Invoke(_player, target, damage);
 
         // Kill enemy before triggering next action, to make sure the world NPC count gets to 0 before next attack if necessary
-        if (target.Health <= 0) target.KillNPC(player);
+        if (target.Health <= 0) target.KillNPC(_player);
 
-        OnPlayerAction?.Invoke(player);
+        OnPlayerAction?.Invoke(_player);
     }
 
     public override void UsePotion(ItemPotion potion) {
-        OnPlayerPotionUse?.Invoke(player, potion);
-        OnPlayerAction?.Invoke(player);
+        OnPlayerPotionUse?.Invoke(_player, potion);
+        OnPlayerAction?.Invoke(_player);
     }
 }

@@ -29,7 +29,7 @@ public class Shop {
     }
 
     public static void SellItem(Player player, ISellable item) {
-        if (!player.RemoveItem(item)) throw new Exception("This item cannot be sold!");
+        player.RemoveItem(item);
 
         player.Money += item.SellPrice;
     }

@@ -84,7 +84,7 @@ public class WarriorActions(NpcCharacter npc) : BaseNpcActions(npc) {
     }
 
     public override void UsePotion() {
-
+        // TODO
     }
 }
 
@@ -106,7 +106,7 @@ public class MageActions(NpcCharacter npc) : BaseNpcActions(npc) {
     }
 
     public override void UsePotion() {
-        Console.WriteLine("The Mage creates a magical barrier to absorb damage.");
+        // TODO
     }
 
 }
@@ -127,7 +127,7 @@ public class RangerActions(NpcCharacter npc) : BaseNpcActions(npc) {
     }
 
     public override void UsePotion() {
-        Console.WriteLine("The Mage creates a magical barrier to absorb damage.");
+        // TODO
     }
     
 }

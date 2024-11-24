@@ -1,5 +1,5 @@
 public abstract class QuestBase : IQuest {
-    public string Name { get; set; }
+    public virtual string Name { get; set; }
     public Player QuestOwner { get; set; }
 
 

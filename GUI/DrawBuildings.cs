@@ -10,6 +10,7 @@ public partial class GameForm : Form {
             Brush buildingBrush = building.BuildingType switch {
                 World.BuildingType.Shop => new SolidBrush(Color.Green),
                 World.BuildingType.Storage => new SolidBrush(Color.Blue),
+                World.BuildingType.Quest => new SolidBrush(Color.Red),
                 _ => new SolidBrush(Color.Gray) // Default for 'Block' type
             };
 

@@ -9,7 +9,7 @@ public class GameInstance {
 
 
     // Events
-    public static event Action<World, World>? OnPlayerWorldChanged;
+    public static event Action<IWorldChanger, World, World>? OnPlayerWorldChanged;
     public static event Action<World>? OnWorldCreated;
     
 
@@ -71,7 +71,7 @@ public class GameInstance {
     }
     
 
-    public static void DisplayWorlds() {
+    public static void DebugDisplayWorlds() {
         Console.WriteLine($"------WORLDS------");
         foreach (var world in Worlds) {
             Console.WriteLine($"{world.Name} NPCs:{world.NPCs.Count} Tick:{world.Tick}");
@@ -101,21 +101,24 @@ public class GameInstance {
         Worlds.Remove(world);
     }
 
-    public static void ChangeWorld(Player player, World newWorld) {
-        player.CurrentWorld = newWorld;
+    public static void ChangeWorld(IWorldChanger unit, World newWorld) {
+        unit.CurrentWorld = newWorld;
 
-        OnPlayerWorldChanged?.Invoke(player.CurrentWorld, newWorld);
+        OnPlayerWorldChanged?.Invoke(unit, unit.CurrentWorld, newWorld);
     }
 }
 
 
-
+public interface IWorldChanger {
+    World CurrentWorld { get; set; }
+}
 
 public class World {
     public enum BuildingType {
         Block, // No use (just a building block)
         Shop,
-        Storage
+        Storage,
+        Quest
     }
     public class Building(string name, int xPos, int yPos, int width = 100, int height = 100, BuildingType type = BuildingType.Block) {
         public string Name { get; set; } = name;
@@ -152,25 +155,45 @@ public class World {
         return NPCs;
     }
 
-    // Method to display the game state
-    public virtual void DisplayWorldState() {
-        Console.WriteLine($"World name: {Name}");
-        Console.WriteLine($"Number of NPCs: {NPCs.Count}");
-    }
-
-    public virtual void DisplayWorldEnemies() {
-        if (NPCs.Count > 0) {
-            Console.WriteLine("-----Enemies-----");
-            int i = 0;
-            foreach (NpcCharacter enemy in NPCs) {
-                Console.WriteLine($"[{i}] {enemy.Name}: Health: {enemy.Health}, Mana: {enemy.Mana}");
-                i++;
-            }
-            Console.WriteLine("-----------------");
-        }
-    }
 
     public bool IsPlayerTurn() {
         return Tick % 2 == 0;
     }
+
+
+    public static (int, int) FindSafeSpaceFromWorld(World worldToSpawn, int minDistance = 100) {
+
+        Random random = new Random();
+
+        int tries = 0;
+        while (true) {
+            if (tries > 500) throw new InvalidOperationException("Unable to find safe location!");
+            tries++;
+
+            // Don't allow NPCs to spawn right next to borders
+            int xSpawn = random.Next(100, GUI.GameForm.ScreenWidth - 100);
+            int ySpawn = random.Next(100, GUI.GameForm.ScreenHeight - GUI.GameForm.StatsBarHeight - 100);
+
+            if (worldToSpawn.NPCs.Count == 0) return (xSpawn, ySpawn);
+
+            bool isSafe = true; // Assume the spot is safe initially
+
+            // Check collision with existing NPCs
+            foreach (NpcCharacter existingNpc in worldToSpawn.NPCs) {
+                double distance = Math.Sqrt(Math.Pow(existingNpc.X - xSpawn, 2) + Math.Pow(existingNpc.Y - ySpawn, 2)); // Calculate distance to each other NPC
+
+                // Check if distance is less than minimum distance, if so, it's not safe
+                if (distance < minDistance) {
+                    isSafe = false;
+                    break; // No need to check further, break out of the loop
+                }
+            }
+
+            // If no collision was found and it's safe, return the position
+            if (isSafe) {
+                return (xSpawn, ySpawn);
+            }
+        }
+    }
+
 }

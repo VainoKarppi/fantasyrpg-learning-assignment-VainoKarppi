@@ -1,28 +1,42 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
+using System.Runtime.InteropServices;
 using System.Windows.Forms;
 
 
 namespace GUI;
 
-public partial class GameForm : Form {
 
-    private Player player;
+
+public partial class GameForm : Form {
+    public const bool DEBUG = true;
+
+
+    [DllImport("kernel32.dll")]
+    private static extern bool AllocConsole();
+
+    private readonly Player player;
 
     private const int MoveStep = 5;
 
     public const int ScreenWidth = 1000;
     public const int ScreenHeight = 700 + StatsBarHeight;
-    private const int StatsBarHeight = 200;
+    public const int StatsBarHeight = 200;
 
     public GameForm() {
+        
         SuspendLayout();
         ClientSize = new Size(ScreenWidth, ScreenHeight);
         FormBorderStyle = FormBorderStyle.FixedSingle;
         MaximizeBox = false;
         Text = "Game Window";
         ResumeLayout(false);
+        KeyPreview = true;
+        DoubleBuffered = true; // To avoid flickering
+
+        InitializeButtons();
 
         Width = ScreenWidth;
         Height = ScreenHeight;
@@ -30,16 +44,16 @@ public partial class GameForm : Form {
         // Initialize the player
         player = new Player(GameInstance.GetWorld("Home"), "test name"); // TODO name
         player.Money = 800;
-        player.AddItem(new MetalArmor());
-        player.AddItem(new MetalArmor());
+        player.AddItem(new ItemDrop.Gems.Sapphire());
 
-        player.AddQuest(new Quests.Massacare(player));
+
+        player.Health = 50;
 
 
         Paint += GameForm_Paint;
         KeyDown += GameForm_KeyDown;
         KeyUp += GameForm_KeyUp;
-        DoubleBuffered = true; // To avoid flickering
+        
     }
 
     private HashSet<Keys> pressedKeys = new HashSet<Keys>();
@@ -48,22 +62,52 @@ public partial class GameForm : Form {
     private void GameForm_KeyDown(object? sender, KeyEventArgs e) {
         pressedKeys.Add(e.KeyCode);
 
+        ProcessCommand();
 
+        // Handle movement
         ProcessMovement();
 
         // Check for world boundary collision
         CheckWorldBounds();
 
         // Check for collisions with NPCs
-        CheckCollisions();
+        CheckCollisionsInteraction();
 
         // Redraw the screen
         Invalidate();
     }
 
     private void GameForm_KeyUp(object? sender, KeyEventArgs e) {
-        // Remove the key from the pressedKeys set
         pressedKeys.Remove(e.KeyCode);
+    }
+
+
+
+    private void ProcessCommand() {
+        if (pressedKeys.Contains(Keys.H)) {
+            pressedKeys.Clear();
+            ShowHelp();
+        }
+        if (pressedKeys.Contains(Keys.C)) {
+            pressedKeys.Clear();
+            ChangeWeapon();
+        }
+        if (pressedKeys.Contains(Keys.K)) {
+            pressedKeys.Clear();
+            ChangeArmor();
+        }
+        if (pressedKeys.Contains(Keys.P)) {
+            pressedKeys.Clear();
+            UsePotion();
+        }
+        if (pressedKeys.Contains(Keys.Q)) {
+            pressedKeys.Clear();
+            ChangeQuest();
+        }
+        if (pressedKeys.Contains(Keys.N)) {
+            pressedKeys.Clear();
+            ShowStats();
+        }
     }
 
     private void ProcessMovement() {
@@ -76,10 +120,82 @@ public partial class GameForm : Form {
         if (pressedKeys.Contains(Keys.S)) {
             player.Y += MoveStep;
         }
-        if (pressedKeys.Contains(Keys.D)) {
+        if (pressedKeys.Contains(Keys.D)) {  
             player.X += MoveStep;
+            TriggerDamageEffect();
         }
     }
+
+    private async Task TriggerDamageEffect(bool shakeEffect = true) {
+
+        Point playerLocation = new Point(player.X + player.Height / 2, player.Y + player.Width / 2);  // Placeholder for player position; replace with actual position
+
+        // Trigger the blood splash effect at the player's location
+        TriggerBloodSplashEffect(playerLocation);
+
+        if (!shakeEffect) return;
+
+        // Shake the form by briefly changing its location
+        Point originalLocation = Location;
+
+        Random rand = new Random();
+        int shakeDuration = 10; // Duration in milliseconds
+        int shakeAmount = 10; // The amount of shake (in pixels)
+
+        // Shake the screen 5 times (for example)
+        for (int i = 0; i < 5; i++) {
+            int offsetX = rand.Next(-shakeAmount, shakeAmount + 1);
+            int offsetY = rand.Next(-shakeAmount, shakeAmount + 1);
+
+            Location = new Point(originalLocation.X + offsetX, originalLocation.Y + offsetY);
+            await Task.Delay(shakeDuration);  // Brief delay to create the shake effect
+        }
+
+        // Return the form to its original position
+        Location = originalLocation;
+    }
+
+    private async Task TriggerBloodSplashEffect(Point playerLocation) {
+        // Set up parameters for the blood splash
+        int splashSize = player.Width + player.Height + 5;  // Size of the blood splatter (in pixels)
+        int splashAlpha = 220;  // Initial alpha (partially transparent)
+
+        // Create a new PictureBox to draw the blood splash
+        PictureBox bloodSplash = new PictureBox {
+            Width = splashSize,
+            Height = splashSize,
+            Location = new Point(playerLocation.X - splashSize / 2, playerLocation.Y - splashSize / 2),  // Center it on the player location
+            BackColor = Color.Transparent
+        };
+
+        // Create a Bitmap for the blood splash
+        Bitmap splashBitmap = new Bitmap(splashSize, splashSize);
+        bloodSplash.Image = splashBitmap;
+        Controls.Add(bloodSplash);
+        bloodSplash.BringToFront();
+
+        // Fade out the blood splash
+        for (int alpha = splashAlpha; alpha >= 0; alpha -= 10) {
+            using (Graphics g = Graphics.FromImage(splashBitmap)) {
+                g.Clear(Color.Transparent);  // Clear the previous drawing
+
+                // Redraw the square with reduced alpha
+                using Brush squareBrush = new SolidBrush(Color.FromArgb(alpha, Color.DarkRed));
+                int squareSize = splashSize / 2;
+                int squareOffset = (splashSize - squareSize) / 2;
+                g.FillRectangle(squareBrush, squareOffset, squareOffset, squareSize, squareSize);
+            }
+
+            bloodSplash.Refresh();  // Refresh to show the updated image
+            await Task.Delay(40);  // Smooth fade-out effect
+        }
+
+        // Remove the blood splash
+        Controls.Remove(bloodSplash);
+        bloodSplash.Dispose();
+    }
+
+
 
     // Ensure the player does not move outside world boundaries
     private void CheckWorldBounds() {
@@ -104,13 +220,40 @@ public partial class GameForm : Form {
             }
         }
 
+        // Prevent player from moving into buildings
+        foreach (World.Building building in player.CurrentWorld.Buildings) {
+            if (player.Bounds.IntersectsWith(new Rectangle(building.X, building.Y, building.Width, building.Height))) {
+                // Prevent player from moving further right if colliding with the building
+                if (player.X + player.Width > building.X && player.X < building.X) {
+                    player.X = building.X - player.Width; // Stop player from going past the building's left side
+                }
+                // Prevent player from moving further left if colliding with the building
+                if (player.X < building.X + building.Width && player.X + player.Width > building.X + building.Width) {
+                    player.X = building.X + building.Width; // Stop player from going past the building's right side
+                }
+
+                // Prevent player from moving further down if colliding with the building
+                if (player.Y + player.Height > building.Y && player.Y < building.Y) {
+                    player.Y = building.Y - player.Height; // Stop player from going past the building's top side
+                }
+
+                // Prevent player from moving further up if colliding with the building
+                if (player.Y < building.Y + building.Height && player.Y + player.Height > building.Y + building.Height) {
+                    player.Y = building.Y + building.Height; // Stop player from going past the building's bottom side
+                }
+
+                // Prevent the player from moving closer to the building
+                break; // Exit after the first building collision to prevent multiple checks for the same frame
+            }
+        }
+
         // Clamp player's position within world boundaries
         player.X = Math.Clamp(player.X, 0, worldWidth - player.Width * 2);
         player.Y = Math.Clamp(player.Y, 40, worldHeight - player.Height * 3); // Add some extra at the bottom, for stats display
     }
 
     // Check if player collides with any NPCs
-    private void CheckCollisions() {
+    private void CheckCollisionsInteraction() {
         foreach (NpcCharacter npc in player.CurrentWorld.NPCs) {
             if (player.Bounds.IntersectsWith(npc.Bounds)) {
                 // Show dialog if collision detected
@@ -122,12 +265,13 @@ public partial class GameForm : Form {
 
         // Check collisions with Buildings
         foreach (World.Building building in player.CurrentWorld.Buildings) {
-            if (player.Bounds.IntersectsWith(new Rectangle(building.X, building.Y, building.Width, building.Height))) {
+            if (player.Bounds.IntersectsWith(new Rectangle(building.X - 5, building.Y - 5, building.Width + 10, building.Height + 10))) {
 
                 // Show dialog or take action if collision with a building is detected
                 pressedKeys.Clear();
 
-                if (building.BuildingType == World.BuildingType.Shop) OpenShopBuy();
+                if (building.BuildingType == World.BuildingType.Shop) OpenShopMenu();
+                if (building.Name == "Butcher") StartQuest();
                 
                 break;
             }
@@ -152,21 +296,11 @@ public partial class GameForm : Form {
         }
     }
 
-    private void ShowShopDialog() {
-        var result = MessageBox.Show("You have entered shop", 
-                                     "NPC Encounter", 
-                                     MessageBoxButtons.YesNo);
 
-        // Yes means attack, No means flee
-        if (result == DialogResult.Yes) {
-            Attack();
-        } else {
-            Flee();
-        }
-    }
 
     // Handle the attack action
     private void Attack() {
+        TriggerDamageEffect(true);
         MessageBox.Show("You chose to attack the NPC!");
         // You can add attack logic here, like reducing NPC health, etc.
     }
@@ -185,15 +319,22 @@ public partial class GameForm : Form {
     private void GameForm_Paint(object? sender, PaintEventArgs e) {
         var g = e.Graphics;
 
-        // Draw current world name at the center at the top
+        // Draw a grey background for the whole screen along the x-axis, and 40 pixels in height on the y-axis
+        using (Brush backgroundBrush = new SolidBrush(Color.LightGray)) {
+            // Fill a rectangle across the top of the screen
+            g.FillRectangle(backgroundBrush, 0, 0, Width, 40); // Full width, 40px height
+        }
+
+        // Draw current world name at the center of the grey background
         string worldName = player.CurrentWorld.Name;
-        using (Font font = new Font("Arial", 16, FontStyle.Bold)) // You can adjust font size and style
-        using (Brush brush = new SolidBrush(Color.Black)) { // Grey color for the text
-            // Calculate position to center the text at the top
+        using (Font font = new Font("Arial", 16, FontStyle.Bold)) // Adjust font size and style
+        using (Brush brush = new SolidBrush(Color.Black)) {
+            // Calculate position to center the text horizontally
             SizeF textSize = g.MeasureString(worldName, font);
             float textX = (Width - textSize.Width) / 2; // Center horizontally
-            float textY = 10; // 10 pixels from the top
+            float textY = (40 - textSize.Height) / 2; // Center vertically within the 40px height
 
+            // Draw the text on top of the grey background
             g.DrawString(worldName, font, brush, textX, textY);
         }
 
@@ -227,51 +368,59 @@ public partial class GameForm : Form {
         DrawStatsBar(g);
         DrawQuest(g);
         DrawInventory(g);
+        DrawButtons(g);
     }
 
-    public static Shop? Shop;    
+    private static Shop? Shop;    
 
     // Main method to run the game form
     public static void Main() {
+        if (DEBUG) AllocConsole();
+        Console.WriteLine("Debug Console Started!");
+
+
         // Create game instance
         new GameInstance();
+
+        // Initialize Events
+        new GameEventListener();
 
         // Create home world
         World homeWorld = GameInstance.CreateWorld("Home");
         homeWorld.IsSafeWorld = true;
 
         homeWorld.Buildings.Add(new World.Building("Shop", 300, 300, 100, 100, World.BuildingType.Shop));
+        homeWorld.Buildings.Add(new World.Building("Butcher", 40, 500, 80, 80, World.BuildingType.Quest));
 
+        World caveWorld = GameInstance.CreateWorld("Cave");
         World forestWorld = GameInstance.CreateWorld("Forest");
         World castleWorld = GameInstance.CreateWorld("Castle");
-        World caveWorld = GameInstance.CreateWorld("Cave");
-
-        // Add some NPCs to the game worlds
-        NpcCharacter.CreateNPC("warrior", forestWorld, 200, 150);
-        NpcCharacter.CreateNPC("archer", forestWorld, 300, 250);
-        NpcCharacter.CreateNPC("archer", forestWorld, 400, 50);
-        NpcCharacter.CreateNPC("archer", forestWorld, 100, 300);
-
-
-        NpcCharacter.CreateNPC("warrior", castleWorld, 200, 100);
-        NpcCharacter.CreateNPC("warrior", castleWorld, 100, 50);
-        NpcCharacter.CreateNPC("warrior", castleWorld, 300, 250);
-        NpcCharacter.CreateNPC("archer", castleWorld, 400, 350);
-
-        NpcCharacter.CreateNPC("warrior", caveWorld, 100, 300);
-        NpcCharacter.CreateNPC("mage", caveWorld, 300, 150);
-        NpcCharacter.CreateNPC("mage", caveWorld, 50, 400);
-        NpcCharacter.CreateNPC("mage", caveWorld, 200, 150);
+        
 
         // Initialize Shop
         Shop = new Shop();
 
-        // Initialize DropManager
+        
+        // NPCs in the cave world
+        NpcCharacter.CreateNPC("warrior", caveWorld, World.FindSafeSpaceFromWorld(caveWorld));
+        NpcCharacter.CreateNPC("mage", caveWorld, World.FindSafeSpaceFromWorld(caveWorld));
+        NpcCharacter.CreateNPC("mage", caveWorld, World.FindSafeSpaceFromWorld(caveWorld));
+        NpcCharacter.CreateNPC("mage", caveWorld, World.FindSafeSpaceFromWorld(caveWorld));
+
+        // NPCs in the forest world
+        NpcCharacter.CreateNPC("warrior", forestWorld, World.FindSafeSpaceFromWorld(forestWorld));
+        NpcCharacter.CreateNPC("archer", forestWorld, World.FindSafeSpaceFromWorld(forestWorld));
+        NpcCharacter.CreateNPC("archer", forestWorld, World.FindSafeSpaceFromWorld(forestWorld));
+        NpcCharacter.CreateNPC("archer", forestWorld, World.FindSafeSpaceFromWorld(forestWorld));
+
+        // NPCs in the castle world
+        NpcCharacter.CreateNPC("warrior", castleWorld, World.FindSafeSpaceFromWorld(castleWorld));
+        NpcCharacter.CreateNPC("warrior", castleWorld, World.FindSafeSpaceFromWorld(castleWorld));
+        NpcCharacter.CreateNPC("warrior", castleWorld, World.FindSafeSpaceFromWorld(castleWorld));
+        NpcCharacter.CreateNPC("archer", castleWorld, World.FindSafeSpaceFromWorld(castleWorld));
+
+        // Initialize DropManager and it's loot
         new DropManager();
-
-
-        // Initialize Events
-        new GameEventListener();
 
 
         Application.EnableVisualStyles();
@@ -279,342 +428,3 @@ public partial class GameForm : Form {
         Application.Run(new GameForm());
     }
 }
-
-
-
-
-/*
-Console.WriteLine("Welcome to RPG game. Please choose a name:");
-string playerName;
-
-while (true) {
-    playerName = Console.ReadLine()!;
-
-    if (!string.IsNullOrEmpty(playerName)) break;
-    Console.WriteLine("Invalid name. Try again!");
-}
-
-
-
-
-
-// Add quest to test
-player.AddQuest(new Quests.Massacare(player));
-
-
-Console.WriteLine($"Welcome {player}. Type 'Help' for commands, and for intructions for how to play.");
-Console.WriteLine("You can access SHOP by typing: 'shop'. This can be only accessed in Home town.");
-
-List<string> Commands = ["Quit","Help","Shop","Inventory","Stats","World","Worlds","ChangeWorld","Potion", "Attack", "ChangeWeapon","Quests","Quest","ChangeQuest"];
-
-while (true) {
-    try {
-        Console.WriteLine();
-        Console.Write($"{player.CurrentWorld.Name} > ");
-        string? command = Console.ReadLine()?.ToLower();
-
-        // Make sure command exists
-        if (string.IsNullOrEmpty(command) || !Commands.Any(c => c.Equals(command, StringComparison.CurrentCultureIgnoreCase))) {
-            Console.WriteLine("Invalid command. Try again!");
-            continue;
-        }
-
-        if (command == "quit") return 0;
-
-        if (command == "help") Showhelp();
-        
-        if (command == "shop") OpenShop();
-
-        if (command == "stats") player.DisplayStats();
-        if (command == "inventory") player.DisplayInventory();
-
-        if (command == "world") player.CurrentWorld.DisplayWorldState();
-        if (command == "worlds") GameInstance.DisplayWorlds();
-        if (command == "changeworld") ChangeWorld();
-
-        if (command == "potion") UsePotion();
-
-        if (command == "changeweapon") ChangeWeapon();
-
-        if (command == "attack") Attack();
-
-        if (command == "quest") DiplayQuestInfo();
-        if (command == "changequest") ChangeActiveQuest();
-        if (command == "quests") DiplayQuests();
-
-    } catch (Exception ex) {
-        Console.WriteLine(ex);
-        Console.WriteLine(ex.Message);
-    }
-}
-
-
-
-
-
-void Showhelp() {
-    Console.WriteLine("---------------------HELP---------------------");
-    Console.WriteLine("Instructions:");
-    Console.WriteLine("Your job is to Clean all worlds from enemies. Make sure to gear up well before fighting. Good Luck!");
-    Console.WriteLine("\nCommands:");
-    string commandsText = "    ";
-    foreach (var command in Commands) {
-        commandsText += command + ", ";
-    }
-    commandsText = commandsText.Substring(0, commandsText.Length - 2);
-    Console.WriteLine($"{commandsText}"); 
-    Console.WriteLine("----------------------------------------------");
-}
-
-
-void ChangeActiveQuest() {
-    if (player.QuestList.Count() == 0) throw new Exception("No quests found!");
-
-    if (player.QuestList.Count() == 1 && player.CurrentQuest == player.QuestList[0])
-        throw new Exception("You dont have any more quests other than the one that is active!");
-
-
-    IQuest? selectedQuest;
-
-    // Get selected quest from list
-    DiplayQuests();
-    while (true) {
-        Console.WriteLine("\nSelect Active quest or 'exit'");
-        Console.Write($"{player.CurrentWorld.Name} (Quests) > ");
-        string mode = Console.ReadLine()!;
-        if (mode.ToLower() == "exit") return;
-        mode = mode.ToLower();
-
-        try {
-            selectedQuest = player.QuestList[int.Parse(mode)];
-            if (selectedQuest != null) break;
-        } catch (Exception) {}
-
-        Console.WriteLine("Invalid command. Try again!");
-    }
-
-    // Update Active quest
-    player.CurrentQuest = selectedQuest;
-}
-
-void DiplayQuests() {
-    Console.WriteLine("---------------------QUESTS---------------------");
-    int i = 0;
-    foreach (IQuest quest in player.QuestList) {
-        Console.WriteLine($"[{i}]    {quest.Name} - {quest.Description}");
-        i++;
-    }
-    Console.WriteLine("------------------------------------------------");
-}
-
-void DiplayQuestInfo() {
-    if (player.CurrentQuest is null) throw new Exception("No quest is active!");
-
-    Console.WriteLine("-----------------CURRENT QUESTS-----------------");
-    Console.WriteLine($"Name: {player.CurrentQuest.Name} - {player.CurrentQuest.Description}");
-    if (player.CurrentQuest.StageDescription != null) {
-        Console.WriteLine($"    {player.CurrentQuest.StageDescription}");
-    }
-    Console.WriteLine("------------------------------------------------");
-}
-
-void OpenShop() {
-    if (!player.CurrentWorld.IsSafeWorld) throw new Exception("You must be in home world to perfor mthis operation!");
-
-    while (true) {
-        // Select Shop mode
-        string? mode;
-        while (true) {
-            Console.WriteLine("\nSelect 'Buy', 'Sell' or 'exit'");
-            Console.Write($"{player.CurrentWorld.Name} (Shop) > ");
-            mode = Console.ReadLine();
-            if (string.IsNullOrEmpty(mode) || mode.ToLower() == "exit") return;
-            mode = mode.ToLower();
-
-            if (mode == "buy" || mode == "sell") break;
-            Console.WriteLine("Invalid command. Try again!");
-        }
-
-
-        // SELL
-        if (mode == "sell") {
-            
-            Dictionary<ISellable, int> sellableItems = Shop.GetSellableItems(player);
-
-            if (sellableItems.Count == 0) {
-                Console.WriteLine("No items to sell!");
-                continue;
-            }
-
-            shop.DisplaySellableItems(sellableItems);
-
-            Console.WriteLine("To sell an item, type the item number. To exit Shop type 'Exit'");
-            while (true) {
-                try {
-                    Console.Write($"{player.CurrentWorld} (Shop : Sell) > ");
-                    string indexToSell = Console.ReadLine()!;
-                    if (indexToSell.ToLower() == "exit") break;
-
-                    int itemIndex = int.Parse(indexToSell);
-
-                    
-                    ISellable itemToSell = sellableItems.Keys.ElementAt(itemIndex);
-
-                    Shop.SellItem(player, itemToSell);
-                    Console.WriteLine($"Sell succesfull! You gained: {itemToSell.SellPrice}. Money: {player.Money}");
-
-                    break;
-                } catch (Exception) {
-                    Console.WriteLine("Invalid item. Try again!");
-                }
-            }
-            continue;
-        }
-
-        // BUY
-        shop.DisplayShopInventory();
-
-        Console.WriteLine("\nTo buy item, type the item number. To exit Shop type 'Exit'");
-        Console.WriteLine($"Money: {player.Money}");
-        while (true) {
-            try {
-                Console.Write($"{player.CurrentWorld} (Shop : Buy) > ");
-                string numberToBuy = Console.ReadLine()!;
-                if (numberToBuy.ToLower() == "exit") break;
-
-                int itemIndex = int.Parse(numberToBuy);
-                IBuyable itemToBuy = shop.ItemsForSale[itemIndex];
-
-                if (player.Money < itemToBuy.BuyPrice) throw new NotEnoughMoneyException("Not enough money!");
-                Shop.BuyItem(player, itemToBuy);
-
-                Console.WriteLine($"You bought: {itemToBuy.Name} for {itemToBuy.BuyPrice} Coins. Money: {player.Money}");
-                break;
-            } catch (Exception ex) {
-                if (ex is NotEnoughMoneyException) {
-                    Console.WriteLine(ex.Message);
-                    continue;
-                }
-                Console.WriteLine("Invalid item. Try again!"); 
-            }
-        }
-    }
-}
-
-void ChangeWorld() {
-    Console.WriteLine("Enter new world name:");
-    string newWorldName = Console.ReadLine()!;
-
-    try {  
-        World newWorld = GameInstance.GetWorld(newWorldName);
-        GameInstance.ChangeWorld(player, newWorld);
-
-
-        Console.WriteLine($"Change world to: {newWorld.Name}");
-        newWorld.DisplayWorldEnemies();
-    } catch (Exception) {
-        Console.WriteLine("Unable to change world");
-    }
-}
-
-
-void UsePotion() {
-    
-    Dictionary<ItemPotion, int> potionCounts = [];
-
-    foreach (object item in player.InventoryItems) {
-        if (item is not ItemPotion) continue; // Skip everything else other than potions
-        
-        potionCounts[(ItemPotion)item] = potionCounts.ContainsKey((ItemPotion)item) ? potionCounts[(ItemPotion)item] + 1 : 1;
-    }
-
-    if (potionCounts.Count > 0) {
-        Console.WriteLine("-----Potions-----");
-
-        int i = 0;
-        foreach (KeyValuePair<ItemPotion, int> item in potionCounts) {
-            Console.WriteLine($"[{i}] {item.Key.Name} ({item.Value})");
-            i++;
-        }
-        Console.WriteLine("-----------------");
-
-        Console.WriteLine("Select potion to use. Or use 'Exit'");
-        string? indexText = Console.ReadLine();
-        if (string.IsNullOrEmpty(indexText) || indexText.Equals("exit", StringComparison.CurrentCultureIgnoreCase)) return;
-        
-        int index = int.Parse(indexText);
-        ItemPotion selectedPotion = potionCounts.Keys.ElementAt(index);
-
-        player.PlayerActions.UsePotion(selectedPotion);
-    } else {
-        Console.WriteLine("No potions in inventory!");
-    }
-}
-
-
-void Attack() {
-    if (player.CurrentWorld.IsSafeWorld) throw new Exception("You cannot be in home world while performing this operation!");
-    if (!player.CurrentWorld.IsPlayerTurn()) throw new Exception("It's not your turn yet!");
-    if (player.CurrentWorld.NPCs.Count <= 0) throw new Exception("No enemies left!");
-
-
-    Console.WriteLine("Select target to attack, or use 'exit'");
-
-    string? input = Console.ReadLine();
-    if (string.IsNullOrEmpty(input)) return;
-    input = input.Trim().ToLower();
-
-    if (input == "exit") {
-        Console.WriteLine("You have left the fight, back to Home.");
-        player.CurrentWorld = homeWorld;
-        return;
-    }
-
-    int index = int.Parse(input);
-    NpcCharacter target = player.CurrentWorld.NPCs[index];
-
-    player.PlayerActions.Attack(target);
-
-    player.CurrentWorld.DisplayWorldEnemies();
-}
-
-
-void ChangeWeapon() {
-    Dictionary<ItemWeapon, int> Weapons = [];
-
-    foreach (object item in player.InventoryItems) {
-        if (item is not ItemWeapon) continue; // Skip everything else other than Weapons
-        
-        Weapons[(ItemWeapon)item] = Weapons.ContainsKey((ItemWeapon)item) ? Weapons[(ItemWeapon)item] + 1 : 1;
-    }
-
-    if (Weapons.Count > 0) {
-        Console.WriteLine("Select new weapon to use or type 'Exit'");
-        Console.WriteLine("-----Weapons-----");
-
-        int i = 0;
-        foreach (KeyValuePair<ItemWeapon, int> item in Weapons) {
-            Console.WriteLine($"[{i}] {item.Key.Name} ({item.Value})");
-            i++;
-        }
-        Console.WriteLine("-----------------");
-
-        Console.WriteLine("Select weapon to use. Or use 'Exit'");
-        string? indexText = Console.ReadLine();
-        if (string.IsNullOrEmpty(indexText) || indexText.Equals("exit", StringComparison.CurrentCultureIgnoreCase)) return;
-        
-        int index = int.Parse(indexText);
-        ItemWeapon selectedPotion = Weapons.Keys.ElementAt(index);
-
-        player.ChangeWeapon(selectedPotion);
-
-        Console.WriteLine($"Current Weapon changed to: {selectedPotion.Name}");
-    } else {
-        Console.WriteLine("No Weapons in invetory!");
-    }
-
-    
-}
-*/
-// test comment
-

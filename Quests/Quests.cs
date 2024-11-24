@@ -6,7 +6,7 @@
 
 public partial class Quests {
     public class Massacare : QuestBase {
-  
+        public override string Name => "Massacare";
         public override string Description => "Kill 3 enemies";
 
         public Massacare(Player questOwner) : base(questOwner) {

@@ -24,7 +24,8 @@ public class MeleeArmor : ItemArmor {
         Type = ItemType.MeleeArmor;
     }
 }
-public class MetalArmor : MeleeArmor {
+public class MetalArmor : MeleeArmor, IBuyable {
+    public int? BuyPrice { get; set; }
     public MetalArmor() {
         Name = "Metal Armor";
 
@@ -38,6 +39,8 @@ public class MetalArmor : MeleeArmor {
 
         Defense = 100;
         Durability = 80;
+
+        BuyPrice = 700;
     }
 }
 
