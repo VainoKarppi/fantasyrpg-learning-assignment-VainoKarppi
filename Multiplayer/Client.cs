@@ -180,6 +180,7 @@ static class MultiplayerClient {
 
                         // If player in same world, update screen
                         if (GameForm.player.CurrentWorld.Name.Equals(unit.CurrentWorldName, StringComparison.CurrentCultureIgnoreCase)) {
+                            if (npc.Health < 0) npc.KillNPC();
                             GameForm.RefreshPage();
                         }
 

@@ -17,12 +17,12 @@ public class NetworkEventListener {
     }
 
     private void HandleNpcAttack(Player player, NpcCharacter npc, int damage) {
-        MultiplayerClient.SendMessageAsync(new { MessageType = NetworkMessageType.SendUpdateData, player.ID, player.Health });
+        MultiplayerClient.SendMessageAsync(new { MessageType = NetworkMessageType.SendUpdateData, player.ID, player.Health, CurrentWorldName = player.CurrentWorld.Name });
     }
 
 
 
     private void HandlePlayerAttack(Player player, NpcCharacter npc, int damage) {
-        MultiplayerClient.SendMessageAsync(new { MessageType = NetworkMessageType.SendUpdateDataNpc, npc.ID, npc.Health });
+        MultiplayerClient.SendMessageAsync(new { MessageType = NetworkMessageType.SendUpdateDataNpc, npc.ID, npc.Health, CurrentWorldName = npc.CurrentWorld.Name });
     }
 }
