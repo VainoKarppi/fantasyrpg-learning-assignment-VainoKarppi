@@ -1,11 +1,5 @@
 
-public static class IDGenerator {
-    private static int idIndex = 0;
 
-    public static int GenerateId() {
-        return ++idIndex;
-    }
-}
 
 public interface ICharacter {
     int ID { get; }
@@ -25,7 +19,7 @@ public interface ICharacter {
 public class Player : ICharacter, IWorldChanger {
 
     public int X { get; set; } = GUI.GameForm.ScreenWidth / 2;
-    public int Y { get; set; } = GUI.GameForm.ScreenHeight / 2;
+    public int Y { get; set; } = (GUI.GameForm.ScreenHeight - GUI.GameForm.StatsBarHeight) / 2;
     public int Width { get; set; } = 20;
     public int Height { get; set; } = 20;
     public Color Color => Color.Blue;
@@ -36,7 +30,7 @@ public class Player : ICharacter, IWorldChanger {
     public string Name { get; set; }
     public World CurrentWorld { get; set; }
 
-    public int ID { get; } = IDGenerator.GenerateId();
+    public int ID { get; set; } = -1;
     
 
     public int Health { get; set; } = 100;
@@ -54,10 +48,12 @@ public class Player : ICharacter, IWorldChanger {
 
     public List<IQuest> QuestList { get; set; } = [];
     public IQuest? CurrentQuest { get; set; }
+    public List<string> CompletedQuests { get; set; } = [];
 
     //--- EVENTS
     public static event Action<Player, ICharacter?>? OnPlayerKilled;
     public static event Action<Player>? OnPlayerCreated;
+    public static event Action<Player>? OnPlayerRespawn;
 
 
     public Statistics PlayerStatistics { get; private set; } = new Statistics();
@@ -69,7 +65,7 @@ public class Player : ICharacter, IWorldChanger {
 
         // TODO what else to add to statistics ???
     }
-
+    
 
     public Player(World startWorld, string playerName = "Player") {
         
@@ -98,11 +94,18 @@ public class Player : ICharacter, IWorldChanger {
         InventoryItems.Clear();
         Health = 100;
 
-        X = GUI.GameForm.ScreenWidth / 2;
-        Y = GUI.GameForm.ScreenHeight / 2; 
-
         World homeWorld = GameInstance.Worlds.First(x => x.IsSafeWorld);
         ChangeWorld(homeWorld);
+
+        X = GUI.GameForm.ScreenWidth / 2;
+        Y = GUI.GameForm.ScreenHeight / 2;  
+
+        OnPlayerRespawn?.Invoke(this); 
+    }
+
+    public void ChangeWorld(string worldName) {
+        World world = GameInstance.GetWorld(worldName);
+        ChangeWorld(world);
     }
 
     public void ChangeWorld(World newWorld) {

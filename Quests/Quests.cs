@@ -16,7 +16,8 @@ public partial class Quests {
             MissionStages.AddRange([
                 new Stage("3 enemies left!"),
                 new Stage("2 enemies left!"),
-                new Stage("1 enemy left!")
+                new Stage("1 enemy left!"),
+                new Stage("Return to start location")
             ]);
 
             // Add rewards
@@ -29,9 +30,9 @@ public partial class Quests {
         private void HandleNpcKilled(NpcCharacter npc, Player? player) {
             if (player != null) {
                 if (player.QuestList.Contains(this)) {
-                    UpdateStageStatus();
+                    if (CurrentStageIndex < 4) UpdateStageStatus();
                 } else {
-                    // Unsubscribe event
+                    // Unsubscribe event on quest completed
                     NpcCharacter.OnNpcKilled -= HandleNpcKilled;
                 }
             }

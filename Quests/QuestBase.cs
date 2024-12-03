@@ -29,17 +29,20 @@ public abstract class QuestBase : IQuest {
     }
 
     public virtual void UpdateStageStatus() { 
-        if (CurrentStageIndex == MissionStages.Count - 1) {
+        CurrentStageIndex++; // Increment to next stage
+
+        if (CurrentStageIndex == MissionStages.Count) {
             Quests.TriggerQuestEndedEvent(this, true);
             HandleRewards();
 
             // TODO Decide if this should be handled automatically or inside an event?
             QuestOwner.RemoveQuest(this);
+
+            // Mark quest as completed
+            QuestOwner.CompletedQuests.Add(Name);
         } else {
             Quests.TriggerQuestUpdatedEvent(this);
         }
-
-        CurrentStageIndex++;
     }
 
     internal class Stage(string description) : IQuestStage {

@@ -20,7 +20,7 @@ public class MeleeWeapon : ItemWeapon {
     public class Fists : MeleeWeapon {
         public Fists() {
             Name = "Fist";
-            Damage = 5;
+            Damage = 10;
         }
     }
     public class BasicSword : MeleeWeapon, ISellable, IBuyable {

@@ -19,12 +19,9 @@ public class GameInstance {
         _instance = this;
 
         PlayerActions.OnPlayerAction += HandlePlayerAction;
-
-        BaseNpcActions.OnNpcAction += HandleNpcAction;
     }
 
     private void HandlePlayerAction(Player player) {
-        player.CurrentWorld.Tick++;
 
         World fightWorld = player.CurrentWorld;
 
@@ -36,6 +33,8 @@ public class GameInstance {
         int randomIndex = random.Next(fightWorld.NPCs.Count);
         NpcCharacter npc = fightWorld.NPCs[randomIndex];
 
+
+        
         if (random.Next(100) < 50) {
             npc.NpcActions?.Attack(player);
         } else {
@@ -44,11 +43,15 @@ public class GameInstance {
     }
 
     private void HandleNpcAction(NpcCharacter npc) {
-        npc.CurrentWorld.Tick++;
+        
     }
 
     
-
+    public static void RemoveAllNpcs() {
+        foreach (World world in Worlds) {
+            world.NPCs.Clear();
+        }
+    }
     
 
     public static GameInstance GetInstance() {
@@ -66,18 +69,10 @@ public class GameInstance {
     public static bool RemovePlayerFromInstance(Player player) {
         if (_instance == null) throw new InvalidOperationException("Instance not found!");
 
-        int removed = Players.RemoveAll(x => x.Name == player.Name);
-        return removed > 0;
+        bool removed = Players.Remove(player);
+        return removed;
     }
     
-
-    public static void DebugDisplayWorlds() {
-        Console.WriteLine($"------WORLDS------");
-        foreach (var world in Worlds) {
-            Console.WriteLine($"{world.Name} NPCs:{world.NPCs.Count} Tick:{world.Tick}");
-        }
-        Console.WriteLine($"------------------");
-    }
 
     public static World CreateWorld(string name) {
         World world = new World(name);
@@ -93,7 +88,7 @@ public class GameInstance {
         return Worlds.First(x => x.Name.Equals(name, StringComparison.CurrentCultureIgnoreCase));
     }
 
-    public void DeleteWorld(string name) {
+    public static void DeleteWorld(string name) {
         DeleteWorld(GetWorld(name));
     }
 
@@ -134,8 +129,6 @@ public class World {
 
     public List<Building> Buildings { get; private set; } = [];
 
-    public int Tick { get; set; }
-
     public bool IsSafeWorld = false;
 
     internal World(string worldName) {
@@ -155,10 +148,6 @@ public class World {
         return NPCs;
     }
 
-
-    public bool IsPlayerTurn() {
-        return Tick % 2 == 0;
-    }
 
 
     public static (int, int) FindSafeSpaceFromWorld(World worldToSpawn, int minDistance = 100) {

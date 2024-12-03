@@ -50,10 +50,12 @@ public class GameEventListener {
 
     private void HandlePlayerKilled(Player player, ICharacter? killer) {
         if (killer != null) {
-            Console.WriteLine($"You were killed by: {killer.Name}");
+            MessageBox.Show($"You were killed by: {killer.Name}.\n\nRespawn?", "You Died", MessageBoxButtons.OK, MessageBoxIcon.Information);
         } else {
-            Console.WriteLine("You died!");
+            MessageBox.Show($"You Died!\n\nRespawn?");
         }
+
+        GUI.GameForm.RefreshPage();
     }
     private void HandlePlayerCreated(Player player) {
         Console.WriteLine($"Created Player: {player.Name}");
@@ -67,7 +69,7 @@ public class GameEventListener {
         Console.WriteLine($"{npc.Name} hit you! You took {damage} damage!");
     }
     private void HandleNpcAction(NpcCharacter npc) {
-        Console.WriteLine("Its your turn!");
+        
     }
     private void HandleNpcKilled(NpcCharacter npc, Player? player) {
         if (player == null) return; // Check if it was killed by a player

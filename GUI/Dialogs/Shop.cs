@@ -109,6 +109,7 @@ public partial class GameForm : Form {
                 if (player.Money >= item.BuyPrice) {
                     MessageBox.Show($"You bought {item.Name} for {item.BuyPrice} Coins.\nRemaining Money: {player.Money}");
                     Shop.BuyItem(player, item);
+                    Invalidate();
                 } else {
                     MessageBox.Show("Not enough money to buy this item.");
                 }
@@ -211,6 +212,8 @@ public partial class GameForm : Form {
 
                     // Show the sale message
                     MessageBox.Show($"You sold {item.Name} for {itemToSell.SellPrice} Coins.\nCurrent Money: {player.Money}");
+
+                    Invalidate();
                 };
 
                 // Add item name label

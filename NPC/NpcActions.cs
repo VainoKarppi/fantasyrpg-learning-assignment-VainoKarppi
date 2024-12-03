@@ -33,51 +33,17 @@ public abstract class BaseNpcActions(NpcCharacter npc) : INpcActions {
         return 20;
     }
 
-    public async Task<bool> AttackFromNpcAsync(Player player) {
-        using CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
-        CancellationToken cancellationToken = cancellationTokenSource.Token;
-
-        World fightWorld = player.CurrentWorld;
-
-        Console.WriteLine($"{npc.Name} is about to hit you!");
-
-        // Start the countdown on a separate task
-        Task countdownTask = Task.Run(() => {
-            for (int i = npc.AttackTime; i > 0; i--) {
-                // Check if cancellation is requested or fight is canceled
-                if (cancellationToken.IsCancellationRequested || fightWorld != player.CurrentWorld) return;
-
-                Console.Write($"Attack incoming in: {i} seconds...   \r");
-                Thread.Sleep(1000);
-            }
-        }, cancellationToken);
-
-        // Monitor user input while the countdown is running
-        while (!countdownTask.IsCompleted) {
-            if (Console.KeyAvailable) {
-                string? userInput = Console.ReadLine();
-                if (!string.IsNullOrEmpty(userInput)) {
-                    Console.WriteLine($"\n\nYou typed: {userInput}");
-                }
-            }
-
-            await Task.Delay(100); // Small delay to prevent tight loop
-        }
-
-        if (cancellationToken.IsCancellationRequested || fightWorld != player.CurrentWorld) return false;
-
-        return true;
+    public void AttackFromNpcAsync(Player player) {
+        GUI.GameForm.TriggerDamageEffect();
     }
 
 }
 
 
 public class WarriorActions(NpcCharacter npc) : BaseNpcActions(npc) {
-    public override async void Attack(Player player) {
-        bool attackDone = await AttackFromNpcAsync(player);
-        if (!attackDone) return;
-
+    public override void Attack(Player player) {   
         int damage = CalculateDamageToPlayer(player);
+        AttackFromNpcAsync(player);
 
         RaiseNpcAttackEvent(player, damage);
         RaiseNpcActionEvent();
@@ -92,14 +58,9 @@ public class WarriorActions(NpcCharacter npc) : BaseNpcActions(npc) {
 
 public class MageActions(NpcCharacter npc) : BaseNpcActions(npc) {
 
-    public override async void Attack(Player player) {
-
-        bool attackDone = await AttackFromNpcAsync(player);
-        if (!attackDone) return;
-        
+    public override void Attack(Player player) {
         int damage = CalculateDamageToPlayer(player);
-
-        Console.WriteLine("The Mage casts a powerful spell!");
+        AttackFromNpcAsync(player);
 
         RaiseNpcAttackEvent(player, damage);
         RaiseNpcActionEvent();
@@ -114,13 +75,9 @@ public class MageActions(NpcCharacter npc) : BaseNpcActions(npc) {
 
 public class RangerActions(NpcCharacter npc) : BaseNpcActions(npc) {
 
-    public override async void Attack(Player player) {
-        Console.WriteLine("The Ranger shot you!");
-
-        bool attackDone = await AttackFromNpcAsync(player);
-        if (!attackDone) return;
-        
+    public override void Attack(Player player) {
         int damage = CalculateDamageToPlayer(player);
+        AttackFromNpcAsync(player);
 
         RaiseNpcAttackEvent(player, damage);
         RaiseNpcActionEvent();

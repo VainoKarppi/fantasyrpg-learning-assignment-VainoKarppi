@@ -4,7 +4,29 @@ namespace GUI;
 
 
 public partial class GameForm : Form {
-    private void DrawStatsBar(Graphics g) {
+    private void DrawTopBar(Graphics g) {
+        // Draw grey background for TopBar
+
+        // Draw a grey background for the whole screen along the x-axis, and 40 pixels in height on the y-axis
+        using (Brush backgroundBrush = new SolidBrush(Color.LightGray)) {
+            // Fill a rectangle across the top of the screen
+            g.FillRectangle(backgroundBrush, 0, 0, Width, TopBarHeight); // Full width, 40px height
+        }
+
+        // Draw current world name at the center of the grey background
+        string worldName = player.CurrentWorld.Name;
+        using Font font = new Font("Arial", 16, FontStyle.Bold); // Adjust font size and style
+        using Brush brush = new SolidBrush(Color.Black);
+
+        // Calculate position to center the text horizontally
+        SizeF textSize = g.MeasureString(worldName, font);
+        float textX = (Width - textSize.Width) / 2; // Center horizontally
+        float textY = (40 - textSize.Height) / 2; // Center vertically within the 40px height
+
+        // Draw the text on top of the grey background
+        g.DrawString(worldName, font, brush, textX, textY);
+    }
+    private void DrawPlayerStatus(Graphics g) {
         int statsBarTop = ClientSize.Height - StatsBarHeight;
 
         // Draw background for stats bar
@@ -28,7 +50,7 @@ public partial class GameForm : Form {
         g.DrawString(weaponText, font, brush, padding, statsBarTop + padding + 60);
         g.DrawString(armorText, font, brush, padding, statsBarTop + padding + 80);
     }
-    private void DrawQuest(Graphics g) {
+    private void DrawQuestStatus(Graphics g) {
         int statsBarTop = ClientSize.Height - StatsBarHeight;
         int questBoxLeft = ClientSize.Width / 4;
         int questBoxWidth = ClientSize.Width / 4;
@@ -43,15 +65,17 @@ public partial class GameForm : Form {
         // Display current quest
         string? questName = player.CurrentQuest?.Name;
         string? questDescription = player.CurrentQuest?.Description;
+        string? questStageDescription = player.CurrentQuest?.StageDescription;
 
-        if (questName is null) questName = "(No quest active)";
-        g.DrawString($"Current Quest: {questName}", font, brush, questBoxLeft + padding, statsBarTop + padding);
+        if (questName is null) questName = "No Quest Active!";
+
+        string text = questName;
+        if(questDescription != null) text += $" - ({questDescription})";
+        g.DrawString($"Current Quest:\n{text}", font, brush, questBoxLeft + padding, statsBarTop + padding);
         
-        if (questDescription != null) {
-            g.DrawString($"Description: {questDescription}", font, brush, questBoxLeft + padding, statsBarTop + padding + 20);
+        if (questStageDescription != null) {
+            g.DrawString($"\nStatus: {questStageDescription}", font, brush, questBoxLeft + padding, statsBarTop + padding + 20);
         }
-
-
     }
     private void DrawInventory(Graphics g) {
         int statsBarTop = ClientSize.Height - StatsBarHeight;
@@ -93,7 +117,7 @@ public partial class GameForm : Form {
     }
 
 
-    private List<Button> buttonsNew = new List<Button>();
+    private List<Button> Buttons = new List<Button>();
 
     private void InitializeButtons() {
         int paddingRight = 10;  // Padding to the right side of the button area
@@ -131,15 +155,16 @@ public partial class GameForm : Form {
             button.Click += (sender, e) => action?.Invoke();
 
             // Add the button to the list (not to Controls yet)
-            buttonsNew.Add(button);
+            Buttons.Add(button);
 
             // Update the Y-position for the next button
             currentY += buttonHeight + buttonPadding; // Vertical spacing for buttons
         }
     }
-
+    private static bool buttonsDrawn = false;
     private void DrawButtons(Graphics g) {
         int paddingRight = 10; // Padding to the right side of the button area
+
         int buttonAreaWidth = ScreenWidth / 4 - paddingRight;   // 1/4 of the screen width minus padding
         int buttonAreaHeight = ScreenHeight / 4 + 14;           // 1/4 of the screen height
         int buttonAreaLeft = ScreenWidth - buttonAreaWidth - paddingRight; // Right side with padding
@@ -148,11 +173,30 @@ public partial class GameForm : Form {
         // Draw button area background
         g.FillRectangle(Brushes.Gray, buttonAreaLeft, buttonAreaTop, buttonAreaWidth, buttonAreaHeight);
 
+        // Draw the multiplayer status text at the top-right below the multiplayer button    
+        if (MultiplayerClient.Client != null) {
+            // TODO
+            string status = "Connected: 127.0.0.1:6055";
+            Font statusFont = new Font("Arial", 10, FontStyle.Bold);
+            Brush statusBrush = Brushes.Gray;
+
+            // Calculate the position
+            int statusX = ScreenWidth - 310; // Adjust for padding
+            int statusY = TopBarHeight / 2; // Slightly below the multiplayer button
+
+            g.DrawString(status, statusFont, statusBrush, statusX, statusY);
+        }
+
+        // Keep drawing the background, but dont redrawn the buttons
+        if (buttonsDrawn) return;
+        buttonsDrawn = true;
+
+
         // Draw black padding area to the right
         g.FillRectangle(Brushes.Black, buttonAreaLeft + buttonAreaWidth, buttonAreaTop, paddingRight, buttonAreaHeight);
 
         // Draw each button (from the pre-created list)
-        foreach (var button in buttonsNew) {
+        foreach (var button in Buttons) {
             button.Location = new Point(buttonAreaLeft + 10, button.Location.Y);  // Adjust position if necessary
             button.Size = new Size(buttonAreaWidth - 20, 28);  // Adjust size if necessary
 
@@ -161,14 +205,124 @@ public partial class GameForm : Form {
                 Controls.Add(button);
             }
         }
+
+        // Draw multiplayer button to top right
+        // Add multiplayer button to the top-right
+        Button multiPlayer = new Button {
+            Text = "Multiplayer",
+            Location = new Point(ScreenWidth - 130, 5), // Positioned at the top-right with padding
+            Size = new Size(110, 30)
+        };
+
+        // Add click event if needed
+        multiPlayer.Click += (sender, e) => {
+            ShowMultiplayerDialog();
+        };
+
+        // Add the multiplayer button to controls if not already present
+        if (!Controls.Contains(multiPlayer)) {
+            Controls.Add(multiPlayer);
+        }
+
+        
+
+    }
+
+    private void ShowMultiplayerDialog() {
+        // Create a new form for the options
+        Form multiplayerForm = new Form {
+            Text = "Multiplayer Options",
+            Size = new Size(300, 150),
+            StartPosition = FormStartPosition.CenterParent
+        };
+
+        // Create a label for the prompt
+        Label promptLabel = new Label {
+            Text = "Do you want to Join or Host a multiplayer session?",
+            AutoSize = false,
+            TextAlign = ContentAlignment.MiddleCenter,
+            Dock = DockStyle.Top,
+            Height = 50
+        };
+        
+
+        // Create a Join button
+        Button joinButton = new Button {
+            Text = "Join",
+            Size = new Size(100, 30),
+            Location = new Point(50, 70)
+        };
+        joinButton.Click += (sender, e) => {
+            GameInstance.RemoveAllNpcs();
+
+            // Start over
+            player.ChangeWorld("Home");
+            player.X = ScreenWidth / 2;;
+            player.Y = (ScreenHeight - StatsBarHeight) / 2;
+
+            MultiplayerClient.Connect("127.0.0.1", 6666, player);
+
+            multiplayerForm.Close();
+            Invalidate();
+            // Add logic to join a session here
+        };
+
+        // Create a Join button
+        Button disconnectButton = new Button {
+            Text = "Disconnect",
+            Size = new Size(100, 30),
+            Location = new Point(50, 70)
+            
+        };
+        disconnectButton.Click += (sender, e) => {
+            MultiplayerClient.Disconnect();
+            MultiplayerServer.Stop();
+
+            MultiplayerClient.OtherPlayers.Clear();
+
+            multiplayerForm.Close();
+            Invalidate();
+            // Add logic to join a session here
+        };
+        
+
+        // Create a Host button
+        Button hostButton = new Button {
+            Text = "Host",
+            Size = new Size(100, 30),
+            Location = new Point(160, 70)
+        };
+        hostButton.Click += (sender, e) => {
+            // Start over
+            player.ChangeWorld("Home");
+            player.X = ScreenWidth / 2;;
+            player.Y = (ScreenHeight - StatsBarHeight) / 2;
+
+            new Thread(() => MultiplayerServer.Start("127.0.0.1",6666)).Start();
+            MultiplayerClient.Connect("127.0.0.1", 6666, player);
+            multiplayerForm.Close(); // Close the form after selection
+            Invalidate();
+            // Add logic to host a session here
+        };
+
+
+        if (MultiplayerClient.Client == null) {
+            multiplayerForm.Controls.Add(promptLabel);
+            multiplayerForm.Controls.Add(joinButton);
+            multiplayerForm.Controls.Add(hostButton);
+        } else {
+            multiplayerForm.Controls.Add(disconnectButton);
+        }
+
+        // Show the form as a dialog
+        multiplayerForm.ShowDialog();
     }
 
 
-
     // Button actions
-    private async void ShowHelp() {
+    private void ShowHelp() {
         // Show help asynchronously
-        await Task.Run(() => MessageBox.Show("This is the Help menu. Provide instructions here.", "Help"));
+        MessageBox.Show("This is the Help menu. Provide instructions here.", "Help");
         // After the message box closes, ensure the game form gets focus again
         Focus();
     }
@@ -209,7 +363,7 @@ public partial class GameForm : Form {
                 // Create label based on item type (Weapon, Armor, Potion, Quest)
                 Label itemLabel = new Label() {
                     Text = GetItemLabel(item),
-                    Width = 200, // Label width
+                    Width = 300, // Label width
                     TextAlign = ContentAlignment.MiddleLeft
                 };
 
@@ -257,14 +411,17 @@ public partial class GameForm : Form {
 
     private void ChangeWeapon() {
         OpenItemChangeForm("Change Weapon", player.GetInventoryWeapons(), player.ChangeWeapon, "weapons");
+        Invalidate();
     }
 
     private void ChangeArmor() {
         OpenItemChangeForm("Change Armor", player.GetInventoryArmors(), player.ChangeArmor, "armors");
+        Invalidate();
     }
 
     private void UsePotion() {
         OpenItemChangeForm("Use Potion", player.GetInventoryPotions(), player.PlayerActions.UsePotion, "potions", "Use");
+        Invalidate();
     }
 
     private void ChangeQuest() {
@@ -278,10 +435,16 @@ public partial class GameForm : Form {
         OpenItemChangeForm("Change Quest", availableQuests, (quest) => {
             player.CurrentQuest = quest;
         }, "quests", "Select");
+        Invalidate();
     }
     
 
     private static void ShowStats() {
-        MessageBox.Show("Showing Stats!", "Stats");
+        var statsInfo = string.Join(Environment.NewLine,
+            player.PlayerStatistics.GetType()
+                .GetProperties()
+                .Select(prop => $"{prop.Name}: {prop.GetValue(player.PlayerStatistics)}"));
+
+        MessageBox.Show(statsInfo, "Stats");
     }
 }

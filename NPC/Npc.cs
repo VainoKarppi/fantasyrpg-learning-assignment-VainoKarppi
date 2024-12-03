@@ -2,6 +2,7 @@
 // Base Character Class
 public partial class NpcCharacter : ICharacter, IWorldChanger {
     public string? Name { get; set; }
+    public int MaxHealth { get; set; } = 100;
     public int Health { get; set; }
     public int Mana { get; set; }
     public int Strength { get; set; }
@@ -20,7 +21,7 @@ public partial class NpcCharacter : ICharacter, IWorldChanger {
 
 
 
-    public int ID { get; } = IDGenerator.GenerateId();
+    public int ID { get; set; } = -1;
 
     public ItemArmor Armor { get; set; }
 
@@ -35,7 +36,7 @@ public partial class NpcCharacter : ICharacter, IWorldChanger {
 
     public NpcCharacter(World world, int xPos, int yPos) {
         CurrentWorld = world ?? throw new ArgumentNullException(nameof(world), "CurrentWorld cannot be null.");
-
+        
         X = xPos;
         Y = yPos;
 
@@ -62,7 +63,7 @@ public partial class NpcCharacter : ICharacter, IWorldChanger {
 
 
 
-    public static NpcCharacter CreateNPC(string npcType, World spawnWorld, (int xPos, int yPos) position) {
+    public static NpcCharacter CreateNPC(string npcType, World spawnWorld, (int xPos, int yPos) position, int? health = null) {
         if (spawnWorld == null) throw new ArgumentNullException(nameof(spawnWorld), "World cannot be null when creating an NPC.");
 
         NpcCharacter npc = npcType.ToLower() switch {
@@ -71,6 +72,8 @@ public partial class NpcCharacter : ICharacter, IWorldChanger {
             "archer" => new NpcArcher(spawnWorld, position.xPos, position.yPos),
             _ => throw new ArgumentException("Invalid character type"),
         };
+
+        if (health != null) npc.Health = (int)health;
 
         spawnWorld.AddNPC(npc);
         

@@ -4,8 +4,8 @@ namespace GUI;
 
 
 public partial class GameForm : Form {
-    private static void DrawBuildings(Graphics g, World world) {
-        foreach (var building in world.Buildings) {
+    private static void DrawBuildings(Graphics g) {
+        foreach (var building in player.CurrentWorld.Buildings) {
             // Choose a color based on the building type
             Brush buildingBrush = building.BuildingType switch {
                 World.BuildingType.Shop => new SolidBrush(Color.Green),
