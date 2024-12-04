@@ -6,7 +6,6 @@ using System.Text.Json.Serialization;
 using GUI;
 
 public enum NetworkMessageType {
-    ServerShutdown,
     Connect,
     Disconnect,
     SendUpdateData,
@@ -14,7 +13,7 @@ public enum NetworkMessageType {
     InitialSync,
     ReceiveUpdateDataNpc,
     SendUpdateDataNpc,
-    CreateNpc
+    CreateNpc,
     
 }
 
@@ -34,19 +33,24 @@ public class NetworkUnit {
 }
 
 static class MultiplayerClient {
+    public static event Action<TcpClient, Player>? OnConnectStart;
+    public static event Action<TcpClient, Player, Exception?>? OnConnectEnd;
+    public static event Action? OnDisconnect;
+
     public static TcpClient? Client;
     private static NetworkStream? Stream;
 
     public static List<NetworkUnit> OtherPlayers = [];
 
     public static void Connect(string ipAddress, int port, Player player) {
+        if (player is null) throw new Exception("No player object found!");
         if (Client != null) throw new Exception("Already connected to server!");
 
         try {
-            
             Client = new TcpClient();
             Client.Connect(ipAddress, port);
-            Console.WriteLine("CLIENT: Connected to the server!");
+
+            OnConnectStart?.Invoke(Client!, player);
 
             Stream = Client.GetStream();
 
@@ -61,6 +65,11 @@ static class MultiplayerClient {
             SendMessageAsync(new { MessageType = NetworkMessageType.Connect, player.Name, CurrentWorldName = player.CurrentWorld.Name, player.X, player.Y });
         } catch (Exception ex) {
             Console.WriteLine("Error connecting to server: " + ex.Message);
+
+            OnConnectEnd?.Invoke(Client!, player, ex);
+            Disconnect();
+
+            throw;
         }
     }
 
@@ -130,31 +139,32 @@ static class MultiplayerClient {
                 if (method == NetworkMessageType.Connect) {
                     if (unit.ID == null) continue;
                     GameForm.player.ID = (int)unit.ID;
+
+                    OnConnectEnd?.Invoke(Client!, GameForm.player, null);
                     continue;
                 }
 
-                //--- SERVER SHUTDOWN
-                if (method == NetworkMessageType.ServerShutdown) {
-                    OtherPlayers.Clear();
-                    GameForm.player.ID = -1;
-                    return; // --> Disconnect
+                //--- CLIENT DISCONNECT
+                if (method == NetworkMessageType.Disconnect) {
+                    if (unit.ID == null) continue;
+
+                    OtherPlayers.RemoveAll(p => p.ID == unit.ID); // Remove other player from list
+
+                    GameForm.RefreshPage();
+                    continue;
                 }
+
 
                 //--- UPDATE OTHER PLAYER
                 if (method == NetworkMessageType.ReceiveUpdateData) {
                     if (unit.ID == null) continue;
                     
                     // Add to list if not found
-                    if (OtherPlayers.FindIndex(p => p.ID == unit.ID) == -1) {
-                        OtherPlayers.Add(unit);
-                    };
+                    if (OtherPlayers.FindIndex(p => p.ID == unit.ID) == -1) OtherPlayers.Add(unit);
 
                     NetworkUnit? playerToUpdate = OtherPlayers.FirstOrDefault(x => x.ID == unit.ID);
                     if (playerToUpdate == null) continue;
 
-                    // TODO fix sync (optimize)
-                    //if (!GameForm.player.CurrentWorld.Name.Equals(player.CurrentWorldName, StringComparison.CurrentCultureIgnoreCase)) continue;
-                    
                     if (unit.Name != null) playerToUpdate.Name = unit.Name;
                     if (unit.CurrentWorldName != null) playerToUpdate.CurrentWorldName = unit.CurrentWorldName;
                     if (unit.X.HasValue) playerToUpdate.X = unit.X;
@@ -162,7 +172,6 @@ static class MultiplayerClient {
                     if (unit.Health.HasValue) playerToUpdate.Health = unit.Health;
 
                     GameForm.RefreshPage();
-
                     continue;
                 }
 
@@ -204,8 +213,7 @@ static class MultiplayerClient {
                     }
                 }
 
-            } catch (Exception ex) {
-                Console.WriteLine("Error receiving data: " + ex.Message);
+            } catch (Exception) {
                 break;
             }
         }
@@ -214,10 +222,19 @@ static class MultiplayerClient {
     }
 
     public static void Disconnect() {
+        OtherPlayers.Clear();
+        GameForm.player.ID = -1;
+
         Stream?.Close();
         Client?.Close();
         Client = null;
+        Stream = null;
+
+        if (Client == null) return;
 
         Console.WriteLine("Disconnected from the server.");
+
+        // TODO add variable to check if server shutdown or client disconnect
+        OnDisconnect?.Invoke();
     }
 }

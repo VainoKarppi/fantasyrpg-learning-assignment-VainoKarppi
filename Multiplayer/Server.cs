@@ -5,12 +5,19 @@ using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Text.Json.Serialization;
+using System.Collections;
 
 class MultiplayerServer {
     public static TcpListener? Server;
     private static bool ServerRunning;
 
     private static TcpClient? HostClient;
+
+    private static readonly Dictionary<TcpClient, NetworkUnit> Clients = [];
+
+    public static bool IsHost() {
+        return HostClient != null;
+    }
 
     public static void Start(string ipAddress, int port) {
         if (ServerRunning) throw new Exception("Server already running!");
@@ -37,10 +44,9 @@ class MultiplayerServer {
         }
     }
 
-    private static readonly List<NetworkUnit> Players = [];
-    private static readonly List<NetworkStream> Streams = [];
+    private static void SendMessageAsync(TcpClient client, object message) {
+        NetworkStream stream = client.GetStream();
 
-    private static void SendMessageAsync(NetworkStream stream, object message) {
         Task.Run(async () => {
             if (stream is null) return;
 
@@ -70,15 +76,14 @@ class MultiplayerServer {
         });
     }
 
+    private static int _lastID = 0;    
     private static int GetID() {
-        return new Random().Next(999999);
-        // TODO make sure its unique
+        return ++_lastID;
     }
 
 
-    private static async Task HandleClientAsync(TcpClient client) {
-        NetworkStream stream = client.GetStream();
-        Streams.Add(stream);
+    private static async Task HandleClientAsync(TcpClient thisClient) {
+        NetworkStream stream = thisClient.GetStream();
 
         byte[] lengthBuffer = new byte[4];
         while (true) {
@@ -86,7 +91,6 @@ class MultiplayerServer {
                 // Read message lenght
                 int bytesRead = await stream.ReadAsync(lengthBuffer);
                 if (bytesRead == 0) {
-                    Streams.Remove(stream);
                     // TODO REMOVE FROM LIST and notify other clients
                     break;
                 }
@@ -98,7 +102,6 @@ class MultiplayerServer {
                 while (totalBytesRead < messageLength) {
                     bytesRead = await stream.ReadAsync(messageBuffer.AsMemory(totalBytesRead, messageLength - totalBytesRead));
                     if (bytesRead == 0) {
-                        Streams.Remove(stream);
                         // TODO REMOVE FROM LIST and notify other clients
                         break;
                     }
@@ -115,35 +118,27 @@ class MultiplayerServer {
 
                 //--- ACCEPT CONNECTION TO SERVER
                 if (method == NetworkMessageType.Connect) {
-                    int newId = GetID();
+                    unit.ID = GetID();
                     
-                    Console.WriteLine($"PLAYER: {unit.Name} Connected to server! ID: {newId}");
+                    Console.WriteLine($"PLAYER: {unit.Name} Connected to server! ID: {unit.ID}");
 
                     // Send client id back to connected client
-                    SendMessageAsync(stream, new { MessageType = NetworkMessageType.Connect, ID = newId });
+                    SendMessageAsync(thisClient, new { MessageType = NetworkMessageType.Connect, unit.ID });
                     
                     // Send sync data of other players
-                    foreach (NetworkUnit otherPlayer in Players) {
-                        SendMessageAsync(stream, new { MessageType = NetworkMessageType.ReceiveUpdateData, otherPlayer.Name, otherPlayer.ID, otherPlayer.X, otherPlayer.Y, otherPlayer.CurrentWorldName });
+                    foreach (KeyValuePair<TcpClient, NetworkUnit> client in Clients) {
+                        SendMessageAsync(thisClient, new { MessageType = NetworkMessageType.ReceiveUpdateData, client.Value.ID, client.Value.Name, client.Value.X, client.Value.Y, client.Value.CurrentWorldName });
                     }
                 
-                    unit.ID = newId;
-                    Players.Add(unit);
 
-                    // Send other players data
-                    unit.MessageType = NetworkMessageType.ReceiveUpdateData;
-                    foreach (NetworkStream otherPlayerStream in Streams) {
-                        if (otherPlayerStream == stream) continue; // Dont send sync data back to connected client
-
-                        SendMessageAsync(otherPlayerStream, unit);
-                    }
+                    Clients.Add(thisClient, unit);
 
                     // Send NPC sync data
-                    if (HostClient != client) {
+                    if (HostClient != thisClient) {
                         foreach (World world in GameInstance.Worlds) {
                             foreach (NpcCharacter npc in world.NPCs) {
                                 npc.ID = GetID();
-                                SendMessageAsync(stream, new { MessageType = NetworkMessageType.CreateNpc, npc.ID, npc.Health, npc.X, npc.Y, npc.Name, CurrentWorldName = npc.CurrentWorld.Name });
+                                SendMessageAsync(thisClient, new { MessageType = NetworkMessageType.CreateNpc, npc.ID, npc.Health, npc.X, npc.Y, npc.Name, CurrentWorldName = npc.CurrentWorld.Name });
                             }
                         }
                     }
@@ -151,7 +146,7 @@ class MultiplayerServer {
 
                 //--- RECEIVE PLAYER DATA UPDATED
                 if (method == NetworkMessageType.SendUpdateData) {
-                    NetworkUnit? player = Players.SingleOrDefault(x => x.ID == unit.ID);
+                    NetworkUnit? player = Clients.SingleOrDefault(x => x.Value.ID == unit.ID).Value;
                     if (player is null) continue;
 
                     unit.MessageType = NetworkMessageType.ReceiveUpdateData;
@@ -161,11 +156,14 @@ class MultiplayerServer {
                     if (unit.Y.HasValue) player.Y = unit.Y;
                     if (unit.CurrentWorldName != null) player.CurrentWorldName = unit.CurrentWorldName;
 
-                    foreach (NetworkStream otherPlayerStream in Streams) {
-                        // Dont send data back to sender
-                        if (otherPlayerStream == stream) continue;
+                    
+                    foreach (KeyValuePair<TcpClient, NetworkUnit> client in Clients) {
+                        if (client.Key == thisClient) continue; // Dont send data back to sender
 
-                        SendMessageAsync(otherPlayerStream, unit);
+                        // TODO Only sync data if in same world
+                        //if (playerData.Key.CurrentWorldName?.ToLower() != player.CurrentWorldName?.ToLower()) continue;
+
+                        SendMessageAsync(client.Key, unit);
                     }
                 }
 
@@ -184,11 +182,10 @@ class MultiplayerServer {
                     if (unit.Health.HasValue) npc.Health = (int)unit.Health;
                     // TODO update current world
 
-                    foreach (NetworkStream otherPlayerStream in Streams) {
-                        // Dont send data back to sender
-                        if (otherPlayerStream == stream) continue;
+                    foreach (KeyValuePair<TcpClient, NetworkUnit> client in Clients) {
+                        if (client.Key == thisClient) continue; // Dont send data back to sender
 
-                        SendMessageAsync(otherPlayerStream, unit);
+                        SendMessageAsync(client.Key, unit);
                     }
                 }
 
@@ -202,12 +199,21 @@ class MultiplayerServer {
             }
         }
 
-        client.Close();
+        int? disconnectClientId = Clients[thisClient].ID;
+
+        Clients.Remove(thisClient);
+        thisClient.Close();
+
+        // Send disconnect message to other players 
+        foreach (KeyValuePair<TcpClient, NetworkUnit> client in Clients) {
+            SendMessageAsync(client.Key, new { MessageType = NetworkMessageType.Disconnect, ID = disconnectClientId});
+        }
     }
 
     public static void Stop() {
         ServerRunning = false;
         Server = null;
+        HostClient = null;
         Console.WriteLine("Server stopped.");
     }
 }

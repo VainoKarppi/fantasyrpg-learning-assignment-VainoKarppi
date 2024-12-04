@@ -1,5 +1,6 @@
 using System.Drawing;
 
+
 namespace GUI;
 
 
@@ -162,6 +163,8 @@ public partial class GameForm : Form {
         }
     }
     private static bool buttonsDrawn = false;
+
+
     private void DrawButtons(Graphics g) {
         int paddingRight = 10; // Padding to the right side of the button area
 
@@ -173,19 +176,7 @@ public partial class GameForm : Form {
         // Draw button area background
         g.FillRectangle(Brushes.Gray, buttonAreaLeft, buttonAreaTop, buttonAreaWidth, buttonAreaHeight);
 
-        // Draw the multiplayer status text at the top-right below the multiplayer button    
-        if (MultiplayerClient.Client != null) {
-            // TODO
-            string status = "Connected: 127.0.0.1:6055";
-            Font statusFont = new Font("Arial", 10, FontStyle.Bold);
-            Brush statusBrush = Brushes.Gray;
-
-            // Calculate the position
-            int statusX = ScreenWidth - 310; // Adjust for padding
-            int statusY = TopBarHeight / 2; // Slightly below the multiplayer button
-
-            g.DrawString(status, statusFont, statusBrush, statusX, statusY);
-        }
+        DrawMultiplayerStatus(g);
 
         // Keep drawing the background, but dont redrawn the buttons
         if (buttonsDrawn) return;
@@ -206,116 +197,7 @@ public partial class GameForm : Form {
             }
         }
 
-        // Draw multiplayer button to top right
-        // Add multiplayer button to the top-right
-        Button multiPlayer = new Button {
-            Text = "Multiplayer",
-            Location = new Point(ScreenWidth - 130, 5), // Positioned at the top-right with padding
-            Size = new Size(110, 30)
-        };
-
-        // Add click event if needed
-        multiPlayer.Click += (sender, e) => {
-            ShowMultiplayerDialog();
-        };
-
-        // Add the multiplayer button to controls if not already present
-        if (!Controls.Contains(multiPlayer)) {
-            Controls.Add(multiPlayer);
-        }
-
-        
-
-    }
-
-    private void ShowMultiplayerDialog() {
-        // Create a new form for the options
-        Form multiplayerForm = new Form {
-            Text = "Multiplayer Options",
-            Size = new Size(300, 150),
-            StartPosition = FormStartPosition.CenterParent
-        };
-
-        // Create a label for the prompt
-        Label promptLabel = new Label {
-            Text = "Do you want to Join or Host a multiplayer session?",
-            AutoSize = false,
-            TextAlign = ContentAlignment.MiddleCenter,
-            Dock = DockStyle.Top,
-            Height = 50
-        };
-        
-
-        // Create a Join button
-        Button joinButton = new Button {
-            Text = "Join",
-            Size = new Size(100, 30),
-            Location = new Point(50, 70)
-        };
-        joinButton.Click += (sender, e) => {
-            GameInstance.RemoveAllNpcs();
-
-            // Start over
-            player.ChangeWorld("Home");
-            player.X = ScreenWidth / 2;;
-            player.Y = (ScreenHeight - StatsBarHeight) / 2;
-
-            MultiplayerClient.Connect("127.0.0.1", 6666, player);
-
-            multiplayerForm.Close();
-            Invalidate();
-            // Add logic to join a session here
-        };
-
-        // Create a Join button
-        Button disconnectButton = new Button {
-            Text = "Disconnect",
-            Size = new Size(100, 30),
-            Location = new Point(50, 70)
-            
-        };
-        disconnectButton.Click += (sender, e) => {
-            MultiplayerClient.Disconnect();
-            MultiplayerServer.Stop();
-
-            MultiplayerClient.OtherPlayers.Clear();
-
-            multiplayerForm.Close();
-            Invalidate();
-            // Add logic to join a session here
-        };
-        
-
-        // Create a Host button
-        Button hostButton = new Button {
-            Text = "Host",
-            Size = new Size(100, 30),
-            Location = new Point(160, 70)
-        };
-        hostButton.Click += (sender, e) => {
-            // Start over
-            player.ChangeWorld("Home");
-            player.X = ScreenWidth / 2;;
-            player.Y = (ScreenHeight - StatsBarHeight) / 2;
-
-            new Thread(() => MultiplayerServer.Start("127.0.0.1",6666)).Start();
-            MultiplayerClient.Connect("127.0.0.1", 6666, player);
-            multiplayerForm.Close(); // Close the form after selection
-            Invalidate();
-            // Add logic to host a session here
-        };
-
-
-        if (MultiplayerClient.Client == null) {
-            multiplayerForm.Controls.Add(promptLabel);
-            multiplayerForm.Controls.Add(joinButton);
-            multiplayerForm.Controls.Add(hostButton);
-        } else {
-            multiplayerForm.Controls.Add(disconnectButton);
-        }
-
-        // Show the form as a dialog
-        multiplayerForm.ShowDialog();
+        DrawMultiplayerButton();
     }
 
 
