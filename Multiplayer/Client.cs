@@ -22,7 +22,7 @@ public class NetworkMessage {
     public dynamic? Data { get; set; }
 }
 
-public class NetworkUnit {
+public class NetworkObject {
     public NetworkMessageType MessageType { get; set; }
     public int? ID { get; set; }
     public int? Health { get; set; }
@@ -33,14 +33,16 @@ public class NetworkUnit {
 }
 
 static class MultiplayerClient {
+    //--- EVENTS
     public static event Action<TcpClient, Player>? OnConnectStart;
     public static event Action<TcpClient, Player, Exception?>? OnConnectEnd;
     public static event Action? OnDisconnect;
+    
 
     public static TcpClient? Client;
     private static NetworkStream? Stream;
 
-    public static List<NetworkUnit> OtherPlayers = [];
+    public static List<NetworkObject> OtherPlayers = [];
 
     public static void Connect(string ipAddress, int port, Player player) {
         if (player is null) throw new Exception("No player object found!");
@@ -50,7 +52,7 @@ static class MultiplayerClient {
             Client = new TcpClient();
             Client.Connect(ipAddress, port);
 
-            OnConnectStart?.Invoke(Client!, player);
+            OnConnectStart?.InvokeFireAndForget(Client!, player);
 
             Stream = Client.GetStream();
 
@@ -62,11 +64,11 @@ static class MultiplayerClient {
             receiveThread.Start();
             
 
-            SendMessageAsync(new { MessageType = NetworkMessageType.Connect, player.Name, CurrentWorldName = player.CurrentWorld.Name, player.X, player.Y });
+            SendMessageAsync(new { MessageType = NetworkMessageType.Connect, player.Name, CurrentWorldName = player.CurrentWorld!.Name, player.X, player.Y });
         } catch (Exception ex) {
             Console.WriteLine("Error connecting to server: " + ex.Message);
 
-            OnConnectEnd?.Invoke(Client!, player, ex);
+            OnConnectEnd?.InvokeFireAndForget(Client!, player, ex);
             Disconnect();
 
             throw;
@@ -129,7 +131,7 @@ static class MultiplayerClient {
                 string receivedMessage = Encoding.UTF8.GetString(messageBuffer);
                 Console.WriteLine($"CLIENT: {receivedMessage}");
 
-                NetworkUnit? unit = JsonSerializer.Deserialize<NetworkUnit>(receivedMessage);
+                NetworkObject? unit = JsonSerializer.Deserialize<NetworkObject>(receivedMessage);
                 if (unit == null) continue;
 
                 NetworkMessageType? method = unit.MessageType;
@@ -138,9 +140,9 @@ static class MultiplayerClient {
                 //--- ACCEPT SERVER CONNECTION ID
                 if (method == NetworkMessageType.Connect) {
                     if (unit.ID == null) continue;
-                    GameForm.player.ID = (int)unit.ID;
+                    GameForm.Player.ID = (int)unit.ID;
 
-                    OnConnectEnd?.Invoke(Client!, GameForm.player, null);
+                    OnConnectEnd?.InvokeFireAndForget(Client!, GameForm.Player, null);
                     continue;
                 }
 
@@ -162,7 +164,7 @@ static class MultiplayerClient {
                     // Add to list if not found
                     if (OtherPlayers.FindIndex(p => p.ID == unit.ID) == -1) OtherPlayers.Add(unit);
 
-                    NetworkUnit? playerToUpdate = OtherPlayers.FirstOrDefault(x => x.ID == unit.ID);
+                    NetworkObject? playerToUpdate = OtherPlayers.FirstOrDefault(x => x.ID == unit.ID);
                     if (playerToUpdate == null) continue;
 
                     if (unit.Name != null) playerToUpdate.Name = unit.Name;
@@ -188,7 +190,7 @@ static class MultiplayerClient {
                         if (unit.CurrentWorldName != null) npc.CurrentWorld = GameInstance.GetWorld(unit.CurrentWorldName);
 
                         // If player in same world, update screen
-                        if (GameForm.player.CurrentWorld.Name.Equals(unit.CurrentWorldName, StringComparison.CurrentCultureIgnoreCase)) {
+                        if (GameForm.Player.CurrentWorld!.Name.Equals(unit.CurrentWorldName, StringComparison.CurrentCultureIgnoreCase)) {
                             if (npc.Health < 0) npc.KillNPC();
                             GameForm.RefreshPage();
                         }
@@ -208,7 +210,7 @@ static class MultiplayerClient {
                     createdNpc.ID = (int)unit.ID;
 
                     // If player in same world, update screen
-                    if (GameForm.player.CurrentWorld.Name.Equals(unit.CurrentWorldName, StringComparison.CurrentCultureIgnoreCase)) {
+                    if (GameForm.Player.CurrentWorld!.Name.Equals(unit.CurrentWorldName, StringComparison.CurrentCultureIgnoreCase)) {
                         GameForm.RefreshPage();
                     }
                 }
@@ -223,7 +225,7 @@ static class MultiplayerClient {
 
     public static void Disconnect() {
         OtherPlayers.Clear();
-        GameForm.player.ID = -1;
+        GameForm.Player.ID = -1;
 
         Stream?.Close();
         Client?.Close();
@@ -235,6 +237,6 @@ static class MultiplayerClient {
         Console.WriteLine("Disconnected from the server.");
 
         // TODO add variable to check if server shutdown or client disconnect
-        OnDisconnect?.Invoke();
+        OnDisconnect?.InvokeFireAndForget();
     }
 }

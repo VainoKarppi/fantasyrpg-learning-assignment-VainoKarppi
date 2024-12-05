@@ -106,9 +106,9 @@ public partial class GameForm : Form {
                 TextAlign = ContentAlignment.MiddleCenter
             };
             buyButton.Click += (sender, e) => {
-                if (player.Money >= item.BuyPrice) {
-                    MessageBox.Show($"You bought {item.Name} for {item.BuyPrice} Coins.\nRemaining Money: {player.Money}");
-                    Shop.BuyItem(player, item);
+                if (Player.Money >= item.BuyPrice) {
+                    MessageBox.Show($"You bought {item.Name} for {item.BuyPrice} Coins.\nRemaining Money: {Player.Money}");
+                    Shop.BuyItem(Player, item);
                     Invalidate();
                 } else {
                     MessageBox.Show("Not enough money to buy this item.");
@@ -150,7 +150,7 @@ public partial class GameForm : Form {
         sellForm.Controls.Add(itemPanel);
 
         // Group items by name and count quantities
-        var itemsToSell = player.InventoryItems
+        var itemsToSell = Player.InventoryItems
             .Where(item => item is ISellable)
             .GroupBy(item => item.Name)
             .Select(group => new { Name = group.Key, Count = group.Count(), Items = group.ToList() });
@@ -202,16 +202,16 @@ public partial class GameForm : Form {
                 // Sell action
                 sellButton.Click += (sender, e) => {
                     // Remove one item from the group
-                    player.InventoryItems.Remove(item.Items.First());
-                    player.Money += itemToSell.SellPrice;
+                    Player.InventoryItems.Remove(item.Items.First());
+                    Player.Money += itemToSell.SellPrice;
                     
-                    Shop.SellItem(player, itemToSell);
+                    Shop.SellItem(Player, itemToSell);
 
                     // Refresh the item list
                     RefreshItemList();
 
                     // Show the sale message
-                    MessageBox.Show($"You sold {item.Name} for {itemToSell.SellPrice} Coins.\nCurrent Money: {player.Money}");
+                    MessageBox.Show($"You sold {item.Name} for {itemToSell.SellPrice} Coins.\nCurrent Money: {Player.Money}");
 
                     Invalidate();
                 };

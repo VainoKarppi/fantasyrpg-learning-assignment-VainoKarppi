@@ -7,7 +7,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <UseWindowsForms>true</UseWindowsForms>
-    <NoWarn>IDE0074;CA1050;IDE0028;IDE0090;IDE0017;CA1806;CS4014</NoWarn>
+    <NoWarn>IDE0074;CA1050;IDE0028;IDE0090;IDE0017;CA1806;CS4014;CS8618;SYSLIB1054</NoWarn>
   </PropertyGroup>
 
 </Project>

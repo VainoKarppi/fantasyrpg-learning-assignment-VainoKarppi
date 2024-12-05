@@ -8,12 +8,19 @@ using System.Text.Json.Serialization;
 using System.Collections;
 
 class MultiplayerServer {
+    //--- EVENTS
+    public static event Action<TcpClient, NetworkObject>? OnClientConnect;
+    public static event Action<TcpClient, NetworkObject>? OnClientDisconnect;
+    public static event Action? OnServerStart;
+    public static event Action? OnServerStop;
+
+
     public static TcpListener? Server;
     private static bool ServerRunning;
 
     private static TcpClient? HostClient;
 
-    private static readonly Dictionary<TcpClient, NetworkUnit> Clients = [];
+    private static readonly Dictionary<TcpClient, NetworkObject> Clients = [];
 
     public static bool IsHost() {
         return HostClient != null;
@@ -24,9 +31,10 @@ class MultiplayerServer {
         if (Server == null) Server = new TcpListener(IPAddress.Parse(ipAddress), port);
 
         Server.Start();
-        Console.WriteLine("Server started. Waiting for connections...");
 
         ServerRunning = true;
+
+        OnServerStart?.InvokeFireAndForget();
 
         while (ServerRunning) {
             try {
@@ -42,6 +50,8 @@ class MultiplayerServer {
                 Console.WriteLine("Error: " + ex.Message);
             }
         }
+
+        OnServerStop?.InvokeFireAndForget();
     }
 
     private static void SendMessageAsync(TcpClient client, object message) {
@@ -110,7 +120,7 @@ class MultiplayerServer {
 
                 string receivedMessage = Encoding.UTF8.GetString(messageBuffer);
                 
-                NetworkUnit? unit = JsonSerializer.Deserialize<NetworkUnit>(receivedMessage);
+                NetworkObject? unit = JsonSerializer.Deserialize<NetworkObject>(receivedMessage);
                 if (unit == null) continue;
 
                 NetworkMessageType? method = unit.MessageType;
@@ -126,12 +136,14 @@ class MultiplayerServer {
                     SendMessageAsync(thisClient, new { MessageType = NetworkMessageType.Connect, unit.ID });
                     
                     // Send sync data of other players
-                    foreach (KeyValuePair<TcpClient, NetworkUnit> client in Clients) {
+                    foreach (KeyValuePair<TcpClient, NetworkObject> client in Clients) {
                         SendMessageAsync(thisClient, new { MessageType = NetworkMessageType.ReceiveUpdateData, client.Value.ID, client.Value.Name, client.Value.X, client.Value.Y, client.Value.CurrentWorldName });
                     }
-                
+
 
                     Clients.Add(thisClient, unit);
+
+                    OnClientConnect?.InvokeFireAndForget(thisClient, unit);
 
                     // Send NPC sync data
                     if (HostClient != thisClient) {
@@ -146,7 +158,7 @@ class MultiplayerServer {
 
                 //--- RECEIVE PLAYER DATA UPDATED
                 if (method == NetworkMessageType.SendUpdateData) {
-                    NetworkUnit? player = Clients.SingleOrDefault(x => x.Value.ID == unit.ID).Value;
+                    NetworkObject? player = Clients.SingleOrDefault(x => x.Value.ID == unit.ID).Value;
                     if (player is null) continue;
 
                     unit.MessageType = NetworkMessageType.ReceiveUpdateData;
@@ -157,7 +169,7 @@ class MultiplayerServer {
                     if (unit.CurrentWorldName != null) player.CurrentWorldName = unit.CurrentWorldName;
 
                     
-                    foreach (KeyValuePair<TcpClient, NetworkUnit> client in Clients) {
+                    foreach (KeyValuePair<TcpClient, NetworkObject> client in Clients) {
                         if (client.Key == thisClient) continue; // Dont send data back to sender
 
                         // TODO Only sync data if in same world
@@ -182,7 +194,7 @@ class MultiplayerServer {
                     if (unit.Health.HasValue) npc.Health = (int)unit.Health;
                     // TODO update current world
 
-                    foreach (KeyValuePair<TcpClient, NetworkUnit> client in Clients) {
+                    foreach (KeyValuePair<TcpClient, NetworkObject> client in Clients) {
                         if (client.Key == thisClient) continue; // Dont send data back to sender
 
                         SendMessageAsync(client.Key, unit);
@@ -201,11 +213,13 @@ class MultiplayerServer {
 
         int? disconnectClientId = Clients[thisClient].ID;
 
+        OnClientDisconnect?.InvokeFireAndForget(thisClient, Clients[thisClient]);
+
         Clients.Remove(thisClient);
         thisClient.Close();
 
         // Send disconnect message to other players 
-        foreach (KeyValuePair<TcpClient, NetworkUnit> client in Clients) {
+        foreach (KeyValuePair<TcpClient, NetworkObject> client in Clients) {
             SendMessageAsync(client.Key, new { MessageType = NetworkMessageType.Disconnect, ID = disconnectClientId});
         }
     }

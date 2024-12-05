@@ -73,16 +73,16 @@ public class PlayerActions(Player player) : BasePlayerActions(player) {
         target.Health -= damage;
 
 
-        OnPlayerAttack?.Invoke(_player, target, damage);
+        OnPlayerAttack?.InvokeFireAndForget(_player, target, damage);
 
         // Kill enemy before triggering next action, to make sure the world NPC count gets to 0 before next attack if necessary
         if (target.Health <= 0) target.KillNPC(_player);
 
-        OnPlayerAction?.Invoke(_player);
+        OnPlayerAction?.InvokeFireAndForget(_player);
     }
 
     public override void UsePotion(ItemPotion potion) {
-        OnPlayerPotionUse?.Invoke(_player, potion);
-        OnPlayerAction?.Invoke(_player);
+        OnPlayerPotionUse?.InvokeFireAndForget(_player, potion);
+        OnPlayerAction?.InvokeFireAndForget(_player);
     }
 }

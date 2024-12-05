@@ -82,13 +82,13 @@ public partial class GameForm : Form {
                 multiplayerForm.Enabled = false;
                 string? ipAddress = PromptForIPAddress() ?? throw new Exception("Invalid IP address!");
                 
-                MultiplayerClient.Connect(ipAddress, 7842, player);
+                MultiplayerClient.Connect(ipAddress, 7842, Player!);
 
                 // Start over
                 GameInstance.RemoveAllNpcs();
-                player.ChangeWorld("Home");
-                player.X = ScreenWidth / 2;;
-                player.Y = (ScreenHeight - StatsBarHeight) / 2;
+                Player.ChangeWorld("Home");
+                Player.X = ScreenWidth / 2;;
+                Player.Y = (ScreenHeight - StatsBarHeight) / 2;
             } catch (Exception ex) {
                 if (ex is SocketException) {
                     Console.WriteLine(ex.Message);
@@ -127,12 +127,12 @@ public partial class GameForm : Form {
         };
         hostButton.Click += (sender, e) => {
             // Start over
-            player.ChangeWorld("Home");
-            player.X = ScreenWidth / 2;;
-            player.Y = (ScreenHeight - StatsBarHeight) / 2;
+            Player!.ChangeWorld("Home");
+            Player.X = ScreenWidth / 2;;
+            Player.Y = (ScreenHeight - StatsBarHeight) / 2;
 
             new Thread(() => MultiplayerServer.Start("0.0.0.0", 7842)).Start();
-            MultiplayerClient.Connect("127.0.0.1", 7842, player); // Locally connect to self host server
+            MultiplayerClient.Connect("127.0.0.1", 7842, Player); // Locally connect to self host server
             multiplayerForm.Close(); // Close the form after selection
             Invalidate();
             // Add logic to host a session here

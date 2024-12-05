@@ -1,4 +1,6 @@
 
+using GUI;
+
 public class GameEventListener {
     public GameEventListener() {
         GameInstance.OnPlayerWorldChanged += HandleWorldChanged;
@@ -67,6 +69,7 @@ public class GameEventListener {
     }
     private void HandleNpcAttack(Player player, NpcCharacter npc, int damage) {
         Console.WriteLine($"{npc.Name} hit you! You took {damage} damage!");
+        GameForm.RefreshPage(); // update player health
     }
     private void HandleNpcAction(NpcCharacter npc) {
         

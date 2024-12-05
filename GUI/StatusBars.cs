@@ -15,7 +15,7 @@ public partial class GameForm : Form {
         }
 
         // Draw current world name at the center of the grey background
-        string worldName = player.CurrentWorld.Name;
+        string worldName = Player.CurrentWorld!.Name;
         using Font font = new Font("Arial", 16, FontStyle.Bold); // Adjust font size and style
         using Brush brush = new SolidBrush(Color.Black);
 
@@ -39,11 +39,11 @@ public partial class GameForm : Form {
         int padding = 10;
 
 
-        string healthText = $"Health: {player.Health}";
-        string moneyText = $"Money: {player.Money}";
-        string manaText = $"Mana: {player.Mana}";
-        string weaponText = $"Weapon: {player.CurrentWeapon?.Name}";
-        string armorText = $"Armor: {player.CurrentArmor?.Name}";
+        string healthText = $"Health: {Player.Health}";
+        string moneyText = $"Money: {Player.Money}";
+        string manaText = $"Mana: {Player.Mana}";
+        string weaponText = $"Weapon: {Player.CurrentWeapon?.Name}";
+        string armorText = $"Armor: {Player.CurrentArmor?.Name}";
 
         g.DrawString(healthText, font, brush, padding, statsBarTop + padding);
         g.DrawString(moneyText, font, brush, padding, statsBarTop + padding + 20);
@@ -64,9 +64,9 @@ public partial class GameForm : Form {
         int padding = 10;
 
         // Display current quest
-        string? questName = player.CurrentQuest?.Name;
-        string? questDescription = player.CurrentQuest?.Description;
-        string? questStageDescription = player.CurrentQuest?.StageDescription;
+        string? questName = Player.CurrentQuest?.Name;
+        string? questDescription = Player.CurrentQuest?.Description;
+        string? questStageDescription = Player.CurrentQuest?.StageDescription;
 
         if (questName is null) questName = "No Quest Active!";
 
@@ -95,7 +95,7 @@ public partial class GameForm : Form {
         g.DrawString(inventoryTitle, font, brush, inventoryBoxLeft + padding, statsBarTop + padding);
 
         // Group items by name and count their quantities
-        var groupedItems = player.InventoryItems
+        var groupedItems = Player.InventoryItems
             .GroupBy(item => item.Name)
             .Select(group => new { Name = group.Key, Count = group.Count() });
 
@@ -153,7 +153,7 @@ public partial class GameForm : Form {
             };
 
             // Handle button click event
-            button.Click += (sender, e) => action?.Invoke();
+            button.Click += (sender, e) => action?.InvokeFireAndForget();
 
             // Add the button to the list (not to Controls yet)
             Buttons.Add(button);
@@ -292,22 +292,22 @@ public partial class GameForm : Form {
     }
 
     private void ChangeWeapon() {
-        OpenItemChangeForm("Change Weapon", player.GetInventoryWeapons(), player.ChangeWeapon, "weapons");
+        OpenItemChangeForm("Change Weapon", Player.GetInventoryWeapons(), Player.ChangeWeapon, "weapons");
         Invalidate();
     }
 
     private void ChangeArmor() {
-        OpenItemChangeForm("Change Armor", player.GetInventoryArmors(), player.ChangeArmor, "armors");
+        OpenItemChangeForm("Change Armor", Player.GetInventoryArmors(), Player.ChangeArmor, "armors");
         Invalidate();
     }
 
     private void UsePotion() {
-        OpenItemChangeForm("Use Potion", player.GetInventoryPotions(), player.PlayerActions.UsePotion, "potions", "Use");
+        OpenItemChangeForm("Use Potion", Player.GetInventoryPotions(), Player.PlayerActions.UsePotion, "potions", "Use");
         Invalidate();
     }
 
     private void ChangeQuest() {
-        var availableQuests = player.QuestList.Where(q => q != player.CurrentQuest).ToList();
+        var availableQuests = Player.QuestList.Where(q => q != Player.CurrentQuest).ToList();
 
         if (availableQuests.Count == 0) {
             MessageBox.Show("No other quests available!");
@@ -315,7 +315,7 @@ public partial class GameForm : Form {
         }
 
         OpenItemChangeForm("Change Quest", availableQuests, (quest) => {
-            player.CurrentQuest = quest;
+            Player.CurrentQuest = quest;
         }, "quests", "Select");
         Invalidate();
     }
@@ -323,9 +323,9 @@ public partial class GameForm : Form {
 
     private static void ShowStats() {
         var statsInfo = string.Join(Environment.NewLine,
-            player.PlayerStatistics.GetType()
+            Player.PlayerStatistics.GetType()
                 .GetProperties()
-                .Select(prop => $"{prop.Name}: {prop.GetValue(player.PlayerStatistics)}"));
+                .Select(prop => $"{prop.Name}: {prop.GetValue(Player.PlayerStatistics)}"));
 
         MessageBox.Show(statsInfo, "Stats");
     }

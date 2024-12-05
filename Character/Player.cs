@@ -76,14 +76,14 @@ public class Player : ICharacter, IWorldChanger {
 
         CurrentWeapon = new MeleeWeapon.Fists();
 
-        OnPlayerCreated?.Invoke(this);
+        OnPlayerCreated?.InvokeFireAndForget(this);
     }
 
     
     public void KillPlayer(ICharacter? killer = null) {
         PlayerStatistics.DeathsCount++;
 
-        OnPlayerKilled?.Invoke(this, killer);
+        OnPlayerKilled?.InvokeFireAndForget(this, killer);
         
         ResetPlayer();
     }
@@ -100,7 +100,7 @@ public class Player : ICharacter, IWorldChanger {
         X = GUI.GameForm.ScreenWidth / 2;
         Y = GUI.GameForm.ScreenHeight / 2;  
 
-        OnPlayerRespawn?.Invoke(this); 
+        OnPlayerRespawn?.InvokeFireAndForget(this); 
     }
 
     public void ChangeWorld(string worldName) {
@@ -109,7 +109,7 @@ public class Player : ICharacter, IWorldChanger {
     }
 
     public void ChangeWorld(World newWorld) {
-        if (newWorld == null || !GameInstance.Worlds.Contains(newWorld)) return;
+        if (newWorld == null || CurrentWorld == null || !GameInstance.Worlds.Contains(newWorld)) return;
 
         // Get the indices of the current and new worlds
         int currentIndex = GameInstance.Worlds.IndexOf(CurrentWorld);

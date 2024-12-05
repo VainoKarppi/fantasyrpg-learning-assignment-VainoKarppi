@@ -9,14 +9,14 @@ public abstract class BaseNpcActions(NpcCharacter npc) : INpcActions {
     public static event Action<NpcCharacter>? OnNpcAction;
     public static event Action<Player, NpcCharacter, int>? OnNpcAttack;
     protected void RaiseNpcActionEvent() {
-        OnNpcAction?.Invoke(npc);
+        OnNpcAction?.InvokeFireAndForget(npc);
     }
 
     protected void RaiseNpcAttackEvent(Player player, int damage) {
 
         player.Health -= damage;
 
-        OnNpcAttack?.Invoke(player, npc, damage);
+        OnNpcAttack?.InvokeFireAndForget(player, npc, damage);
 
         if (player.Health <= 0) {
             player.KillPlayer();

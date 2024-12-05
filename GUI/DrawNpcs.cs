@@ -6,7 +6,7 @@ namespace GUI;
 public partial class GameForm : Form {
     private static void DrawNpcs(Graphics g) {
         // Draw NPCs
-        foreach (NpcCharacter npc in player.CurrentWorld.NPCs) {
+        foreach (NpcCharacter npc in Player.CurrentWorld!.NPCs) {
             // Draw NPC body
             g.FillRectangle(new SolidBrush(npc.Color), npc.X, npc.Y, npc.Width, npc.Height);
 
@@ -54,13 +54,13 @@ public partial class GameForm : Form {
     
     private static void DrawOtherPlayers(Graphics g) {
         // Draw other Players
-        foreach (NetworkUnit networkPlayer in MultiplayerClient.OtherPlayers) {
+        foreach (NetworkObject networkPlayer in MultiplayerClient.OtherPlayers) {
             if (networkPlayer.X is null || networkPlayer.Y is null) continue;
 
-            if (networkPlayer.CurrentWorldName == null || networkPlayer.CurrentWorldName.ToLower() != player.CurrentWorld.Name.ToLower()) continue;
+            if (networkPlayer.CurrentWorldName == null || networkPlayer.CurrentWorldName.ToLower() != Player.CurrentWorld!.Name.ToLower()) continue;
 
             // Draw other player body
-            g.FillRectangle(new SolidBrush(Color.DarkOrange), (int)networkPlayer.X, (int)networkPlayer.Y, player.Width, player.Height);
+            g.FillRectangle(new SolidBrush(Color.DarkOrange), (int)networkPlayer.X, (int)networkPlayer.Y, Player.Width, Player.Height);
 
             // Draw NPC name above the NPC
             string playerName = networkPlayer.Name ?? "Other Player";
@@ -70,7 +70,7 @@ public partial class GameForm : Form {
 
             if (networkPlayer.X is null || networkPlayer.Y is null) continue;
 
-            float textX = (float)networkPlayer.X + (player.Width - g.MeasureString(playerName, font).Width) / 2;
+            float textX = (float)networkPlayer.X + (Player.Width - g.MeasureString(playerName, font).Width) / 2;
             float textY = (float)networkPlayer.Y - 15;
 
             g.DrawString(playerName, font, brush, textX, textY);
@@ -83,8 +83,8 @@ public partial class GameForm : Form {
  
             float healthBarWidth = 50;  // Set width of the health bar
             float healthBarHeight = 10;  // Set height of the health bar
-            float healthBarX = (int)networkPlayer.X + (player.Width - healthBarWidth) / 2;  // Center the health bar
-            float healthBarY = (int)networkPlayer.Y + player.Height + 5;  // Place it just below the NPC's body
+            float healthBarX = (int)networkPlayer.X + (Player.Width - healthBarWidth) / 2;  // Center the health bar
+            float healthBarY = (int)networkPlayer.Y + Player.Height + 5;  // Place it just below the NPC's body
 
             // Draw the background of the health bar (gray)
             g.FillRectangle(new SolidBrush(Color.Gray), healthBarX, healthBarY, healthBarWidth, healthBarHeight);

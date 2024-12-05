@@ -22,11 +22,12 @@ public class GameInstance {
     }
 
     private void HandlePlayerAction(Player player) {
+        if (player.CurrentWorld is null) return;
 
         World fightWorld = player.CurrentWorld;
 
         // Dont trigger enemy attack if no enemies left
-        if (fightWorld.NPCs.Count() <= 0) return;
+        if (fightWorld.NPCs.Count <= 0) return;
 
         Random random = new Random();
 
@@ -79,7 +80,7 @@ public class GameInstance {
 
         Worlds.Add(world);
         
-        OnWorldCreated?.Invoke(world);
+        OnWorldCreated?.InvokeFireAndForget(world);
 
         return world;
     }
@@ -99,7 +100,7 @@ public class GameInstance {
     public static void ChangeWorld(IWorldChanger unit, World newWorld) {
         unit.CurrentWorld = newWorld;
 
-        OnPlayerWorldChanged?.Invoke(unit, unit.CurrentWorld, newWorld);
+        OnPlayerWorldChanged?.InvokeFireAndForget(unit, unit.CurrentWorld, newWorld);
     }
 }
 

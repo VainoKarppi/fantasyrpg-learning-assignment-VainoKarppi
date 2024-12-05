@@ -62,16 +62,16 @@ public partial class GameForm : Form {
 
     private void ProcessMovement() {
         if (pressedKeys.Contains(Keys.W)) {
-            player.Y -= MoveStep;
+            Player.Y -= MoveStep;
         }
         if (pressedKeys.Contains(Keys.A)) {
-            player.X -= MoveStep;
+            Player.X -= MoveStep;
         }
         if (pressedKeys.Contains(Keys.S)) {
-            player.Y += MoveStep;
+            Player.Y += MoveStep;
         }
         if (pressedKeys.Contains(Keys.D)) {  
-            player.X += MoveStep;
+            Player.X += MoveStep;
         }
 
         // Redraw the screen
@@ -82,25 +82,25 @@ public partial class GameForm : Form {
 
     private static void CheckPlayerBuildingWorldBounds() {
         // Prevent player from moving into buildings
-        foreach (World.Building building in player.CurrentWorld.Buildings) {
-            if (player.Bounds.IntersectsWith(new Rectangle(building.X, building.Y, building.Width, building.Height))) {
+        foreach (World.Building building in Player.CurrentWorld!.Buildings) {
+            if (Player.Bounds.IntersectsWith(new Rectangle(building.X, building.Y, building.Width, building.Height))) {
                 // Prevent player from moving further right if colliding with the building
-                if (player.X + player.Width > building.X && player.X < building.X) {
-                    player.X = building.X - player.Width; // Stop player from going past the building's left side
+                if (Player.X + Player.Width > building.X && Player.X < building.X) {
+                    Player.X = building.X - Player.Width; // Stop player from going past the building's left side
                 }
                 // Prevent player from moving further left if colliding with the building
-                if (player.X < building.X + building.Width && player.X + player.Width > building.X + building.Width) {
-                    player.X = building.X + building.Width; // Stop player from going past the building's right side
+                if (Player.X < building.X + building.Width && Player.X + Player.Width > building.X + building.Width) {
+                    Player.X = building.X + building.Width; // Stop player from going past the building's right side
                 }
 
                 // Prevent player from moving further down if colliding with the building
-                if (player.Y + player.Height > building.Y && player.Y < building.Y) {
-                    player.Y = building.Y - player.Height; // Stop player from going past the building's top side
+                if (Player.Y + Player.Height > building.Y && Player.Y < building.Y) {
+                    Player.Y = building.Y - Player.Height; // Stop player from going past the building's top side
                 }
 
                 // Prevent player from moving further up if colliding with the building
-                if (player.Y < building.Y + building.Height && player.Y + player.Height > building.Y + building.Height) {
-                    player.Y = building.Y + building.Height; // Stop player from going past the building's bottom side
+                if (Player.Y < building.Y + building.Height && Player.Y + Player.Height > building.Y + building.Height) {
+                    Player.Y = building.Y + building.Height; // Stop player from going past the building's bottom side
                 }
 
                 // Prevent the player from moving closer to the building
@@ -113,38 +113,38 @@ public partial class GameForm : Form {
     private static void CheckPlayerWorldBounds() {
 
         // Move player From Left to Right World
-        if (player.X + player.Width >= ScreenWidth - 20) {
-            int currentWorldIndex = GameInstance.Worlds.IndexOf(player.CurrentWorld);
+        if (Player.X + Player.Width >= ScreenWidth - 20) {
+            int currentWorldIndex = GameInstance.Worlds.IndexOf(Player.CurrentWorld!);
 
             if (currentWorldIndex + 1 < GameInstance.Worlds.Count) {
-                player.ChangeWorld(GameInstance.Worlds[currentWorldIndex + 1]);
+                Player.ChangeWorld(GameInstance.Worlds[currentWorldIndex + 1]);
             }
         }
 
         // Move player From Right to Left World
-        if (player.X + player.Width <= 20) {
-            int currentWorldIndex = GameInstance.Worlds.IndexOf(player.CurrentWorld);
+        if (Player.X + Player.Width <= 20) {
+            int currentWorldIndex = GameInstance.Worlds.IndexOf(Player.CurrentWorld!);
 
             if (currentWorldIndex - 1 >= 0) {
-                player.ChangeWorld(GameInstance.Worlds[currentWorldIndex - 1]);
+                Player.ChangeWorld(GameInstance.Worlds[currentWorldIndex - 1]);
                 
             }
         }
 
         // Clamp player's position within world boundaries
-        player.X = Math.Clamp(player.X, 0, WorldWidth - player.Width);
-        player.Y = Math.Clamp(player.Y, TopBarHeight, WorldHeight - player.Height); // Add some extra at the bottom, for stats display
+        Player.X = Math.Clamp(Player.X, 0, WorldWidth - Player.Width);
+        Player.Y = Math.Clamp(Player.Y, TopBarHeight, WorldHeight - Player.Height); // Add some extra at the bottom, for stats display
 
         // Send update location
-        MultiplayerClient.SendMessageAsync(new { MessageType = NetworkMessageType.SendUpdateData, player.ID, player.X, player.Y, CurrentWorldName = player.CurrentWorld.Name });
+        MultiplayerClient.SendMessageAsync(new { MessageType = NetworkMessageType.SendUpdateData, Player.ID, Player.X, Player.Y, CurrentWorldName = Player.CurrentWorld!.Name });
     }
 
     // Check if player collides with any NPCs
     private void CheckCollisionsInteraction() {
 
         // Check NPC collisions
-        foreach (NpcCharacter npc in player.CurrentWorld.NPCs) {
-            if (player.Bounds.IntersectsWith(npc.Bounds)) {
+        foreach (NpcCharacter npc in Player.CurrentWorld!.NPCs) {
+            if (Player.Bounds.IntersectsWith(npc.Bounds)) {
                 // Show dialog if collision detected
                 pressedKeys.Clear();
 
@@ -155,8 +155,8 @@ public partial class GameForm : Form {
         }
 
         // Check collisions with Buildings
-        foreach (World.Building building in player.CurrentWorld.Buildings) {
-            if (player.Bounds.IntersectsWith(new Rectangle(building.X - 5, building.Y - 5, building.Width + 10, building.Height + 10))) {
+        foreach (World.Building building in Player.CurrentWorld!.Buildings) {
+            if (Player.Bounds.IntersectsWith(new Rectangle(building.X - 5, building.Y - 5, building.Width + 10, building.Height + 10))) {
 
                 pressedKeys.Clear();
 

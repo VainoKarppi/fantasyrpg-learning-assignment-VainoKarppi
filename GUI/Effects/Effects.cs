@@ -9,7 +9,7 @@ public partial class GameForm : Form {
     public static async Task TriggerDamageEffect(bool shakeEffect = true) {
 
         // Trigger the blood splash effect at the player's location
-        TriggerBloodSplashEffect(player);
+        TriggerBloodSplashEffect(Player);
 
         if (!shakeEffect) return;
 
@@ -39,7 +39,7 @@ public partial class GameForm : Form {
         Point location = new Point(character.X + character.Height / 2, character.Y + character.Width / 2);
 
         // Set up parameters for the blood splash
-        int splashSize = player.Width + player.Height + 5;  // Size of the blood splatter (in pixels)
+        int splashSize = Player.Width + Player.Height + 5;  // Size of the blood splatter (in pixels)
         int splashAlpha = 220;  // Initial alpha (partially transparent)
 
         // Create a new PictureBox to draw the blood splash

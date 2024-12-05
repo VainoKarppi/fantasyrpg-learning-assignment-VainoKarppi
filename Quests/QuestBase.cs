@@ -59,14 +59,14 @@ public partial class Quests {
     public static event Action<IQuest>? OnQuestUpdated;
 
     public static void TriggerQuestCreatedEvent(IQuest quest) {
-        OnQuestCreated?.Invoke(quest);
+        OnQuestCreated?.InvokeFireAndForget(quest);
     }
 
     public static void TriggerQuestEndedEvent(IQuest quest, bool success) {
-        OnQuestEnded?.Invoke(quest, success);
+        OnQuestEnded?.InvokeFireAndForget(quest, success);
     }
 
     public static void TriggerQuestUpdatedEvent(IQuest quest) {
-        OnQuestUpdated?.Invoke(quest);
+        OnQuestUpdated?.InvokeFireAndForget(quest);
     }
 }

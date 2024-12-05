@@ -58,7 +58,7 @@ public partial class NpcCharacter : ICharacter, IWorldChanger {
 
         if (killer != null) killer.PlayerStatistics.EnemiesKilled++;
 
-        OnNpcKilled?.Invoke(this, killer);
+        OnNpcKilled?.InvokeFireAndForget(this, killer);
     }
 
 
@@ -77,7 +77,7 @@ public partial class NpcCharacter : ICharacter, IWorldChanger {
 
         spawnWorld.AddNPC(npc);
         
-        OnNpcCreated?.Invoke(npc);
+        OnNpcCreated?.InvokeFireAndForget(npc);
 
         return npc;
     }
