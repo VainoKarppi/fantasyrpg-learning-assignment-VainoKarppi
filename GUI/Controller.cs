@@ -58,18 +58,21 @@ public partial class GameForm : Form {
 
         // Attack
         if (pressedKeys.Contains(Keys.Space)) {
+            pressedKeys.Clear();
+            if (Player.CurrentWeapon == null) return;
+
             NpcCharacter? npc = World.GetNearestTarget(Player);
+
+            // Create effect based on current weapon type
+            if (Player.CurrentWeapon.Type == ItemType.MeleeWeapon) new Effect(Player, npc, Effect.EffectType.Melee);
+            if (Player.CurrentWeapon.Type == ItemType.MageWeapon) new Effect(Player, npc, Effect.EffectType.Mage);
+            if (Player.CurrentWeapon.Type == ItemType.RangedArmor) new Effect(Player, npc, Effect.EffectType.Ranged);
+
+            if (npc != null && Player.CanAttack(npc)) Player.Actions.Attack(npc);
             
-            if (npc is null) return;
-            
-            if ((Player as ICharacter).CanAttack(npc)) {
-                CurrentEffect.WeaponEffect(Player, npc);
-                Player.PlayerActions.Attack(npc);
-            }
         }
 
-        // Redraw the screen
-        Invalidate();
+        
     }
 
     private void ProcessMovement() {

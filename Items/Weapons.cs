@@ -5,6 +5,7 @@ public class ItemWeapon : ItemBase {
     public double Damage { get; set; }
     public int Durability { get; set; }
     public int Range { get; set; } = 35;
+    public int ReloadTime { get; set; } = 1000;
 
     public ItemWeapon() {
         Type = ItemType.WeaponBase;

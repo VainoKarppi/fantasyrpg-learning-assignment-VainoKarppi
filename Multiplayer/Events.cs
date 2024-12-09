@@ -26,7 +26,7 @@ public class NetworkEventListener {
         MultiplayerClient.SendMessageAsync(new { MessageType = NetworkMessageType.SendUpdateData, player.ID, player.X, player.Y, CurrentWorldName = player.CurrentWorld.Name, player.Health });
     }
 
-    private void HandleNpcAttack(Player player, NpcCharacter npc, int damage) {
+    private void HandleNpcAttack(NpcCharacter npc, Player player, int damage) {
         MultiplayerClient.SendMessageAsync(new { MessageType = NetworkMessageType.SendUpdateData, player.ID, player.Health, CurrentWorldName = player.CurrentWorld.Name });
     }
 

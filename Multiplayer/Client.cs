@@ -187,7 +187,7 @@ static class MultiplayerClient {
 
                         // If player in same world, update screen
                         if (GameForm.Player.CurrentWorld!.Name.Equals(unit.CurrentWorldName, StringComparison.CurrentCultureIgnoreCase)) {
-                            if (npc.Health < 0) npc.KillNPC();
+                            if (npc.Health < 0) npc.Kill();
                             GameForm.RefreshPage();
                         }
 
@@ -231,7 +231,7 @@ static class MultiplayerClient {
         Console.WriteLine(serverShutdown ? "CLIENT: Server shutdown!" : "CLIENT: Disconnected from the server.");
 
         OnDisconnect?.InvokeFireAndForget(serverShutdown);
-        
+
         GameForm.RefreshPage();
     }
 }

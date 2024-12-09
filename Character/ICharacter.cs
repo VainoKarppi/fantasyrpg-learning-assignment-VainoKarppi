@@ -1,3 +1,6 @@
+
+using GUI;
+
 public interface ICharacter {
     int ID { get; }
     string? Name { get; }
@@ -11,9 +14,37 @@ public interface ICharacter {
     public Color Color => Color.Red;
     public Rectangle Bounds => new Rectangle(X, Y, Width, Height);
 
-    public State CurrentState { get; set; }
-    public ItemWeapon CurrentWeapon { get; set; }
+    public ItemWeapon? CurrentWeapon { get; set; }
+    public ItemArmor? CurrentArmor { get; set; } 
+}
 
+
+
+
+public abstract class Character : ICharacter {
+    public World CurrentWorld { get; set; }
+
+    public int ID { get; set; } = -1;
+
+    public string? Name { get; set; }
+
+    public int Health { get; set; } = 100;
+    public int MaxHealth { get; set; } = 100;
+    public int Mana { get; set; } = 100;
+
+    public int X { get; set; } = GUI.GameForm.ScreenWidth / 2;
+    public int Y { get; set; } = (GUI.GameForm.ScreenHeight - GUI.GameForm.StatsBarHeight) / 2;
+    public int Width { get; set; } = 20;
+    public int Height { get; set; } = 20;
+
+    public State CurrentState { get; set; }
+    public IActions Actions { get; set; }
+
+    public ItemWeapon? CurrentWeapon { get; set; }
+    public ItemArmor? CurrentArmor { get; set; }
+
+
+    
     public enum State {
         Idle,
         Attacking,
@@ -21,16 +52,54 @@ public interface ICharacter {
         Waiting
     }
 
-    public virtual bool CanAttack(ICharacter target) {
-        // Check if the character is not already attacking or moving
-        bool state = CurrentState != State.Attacking && CurrentState != State.Moving;
-        if (!state) return false;
-
+    public virtual bool CanAttack(Character target) {
         // Check weapon range (assuming CalculateDistance is a method of World)
         double distance = World.CalculateDistance(this, target);
+        if (CurrentWeapon == null) return false;
+
         int weaponRange = CurrentWeapon.Range;
         if (weaponRange < distance) return false;
 
         return true;
     }
+
+    public virtual bool HasArmor() {
+        return CurrentArmor != null;
+    }
+    public virtual bool HasWeapon() {
+        return CurrentWeapon != null;
+    }
+
+    public abstract void Kill(Character? killer = null);
+
+    public virtual int CalculateDamage(Character target) {
+        if (CurrentWeapon is null) return 0;
+
+
+        double armorDamageBoost = 1;
+        if (CurrentArmor is not null) {
+            armorDamageBoost = CurrentWeapon.Type switch {
+                ItemType.MeleeWeapon => CurrentArmor.MeleeAttackMultiplier,
+                ItemType.RangedWeapon => CurrentArmor.RangedAttackMultiplier,
+                ItemType.MageWeapon => CurrentArmor.MageAttackMultiplier,
+                _ => 1,
+            };
+        }
+        
+        double armorDefenseBoost = 1;
+        if (target.CurrentArmor != null) {
+            armorDefenseBoost = target.CurrentArmor.Type switch {
+                ItemType.MeleeArmor => target.CurrentArmor.MeleeDefenseMultiplier,
+                ItemType.RangedArmor => target.CurrentArmor.RangedDefenseMultiplier,
+                ItemType.MageArmor => target.CurrentArmor.MageDefenseMultiplier,
+                _ => 1,
+            };
+        }
+
+        double finalDamage = CurrentWeapon.Damage * armorDamageBoost / armorDefenseBoost;
+
+        return (int)Math.Round(finalDamage);
+    }
+    
 }
+

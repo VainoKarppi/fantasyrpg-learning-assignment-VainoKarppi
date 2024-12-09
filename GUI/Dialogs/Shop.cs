@@ -159,6 +159,8 @@ public partial class GameForm : Form {
 
         // Method to update the list of items in the sell form
         void RefreshItemList() {
+            if (itemsToSell.Count() == 0) sellForm.Close();
+
             // Clear existing controls in the item panel to refresh the item list
             itemPanel.Controls.Clear();
 
@@ -201,10 +203,6 @@ public partial class GameForm : Form {
 
                 // Sell action
                 sellButton.Click += (sender, e) => {
-                    // Remove one item from the group
-                    Player.InventoryItems.Remove(item.Items.First());
-                    Player.Money += itemToSell.SellPrice;
-                    
                     Shop.SellItem(Player, itemToSell);
 
                     // Refresh the item list

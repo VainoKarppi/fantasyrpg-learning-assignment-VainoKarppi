@@ -6,10 +6,10 @@ public class NpcWarrior : NpcCharacter {
         Health = 150;
         MaxHealth = 150;
         Mana = 20;
-        Strength = 80;
-        Agility = 30;
-        Armor = new MetalArmor();
-        NpcActions = new WarriorActions(this);
+        
+        CurrentArmor = new MetalArmor();
+        CurrentWeapon = new MeleeWeapon.BasicSword();
+        Actions = new WarriorActions(this);
     }
 }
 
@@ -19,10 +19,10 @@ public class NpcMage : NpcCharacter {
         Health = 70;
         MaxHealth = 70;
         Mana = 120;
-        Strength = 20;
-        Agility = 40;
-        Armor = new MageRobe();
-        NpcActions = new MageActions(this);
+
+        CurrentArmor = new MageRobe();
+        CurrentWeapon = new MageWeapon.BasicWand();
+        Actions = new MageActions(this);
     }
 }
 
@@ -32,9 +32,9 @@ public class NpcArcher : NpcCharacter {
         Health = 90;
         MaxHealth = 90;
         Mana = 50;
-        Strength = 40;
-        Agility = 80;
-        Armor = new LeatherArmor();
-        NpcActions = new RangerActions(this);
+
+        CurrentArmor = new LeatherArmor();
+        CurrentWeapon = new RangedWeapon.BasicBow();
+        Actions = new RangerActions(this);
     }
 }

@@ -14,9 +14,7 @@ public partial class GameForm : Form {
     public static Player Player { get; internal set; }
     private static Shop? Shop;
 
-    private static GameForm? Instance;
-    private static Point _location;
-    private static Control.ControlCollection? _controls;
+    public static GameForm? Form { get; private set; }
 
     private const int MoveStep = 5;
 
@@ -39,10 +37,10 @@ public partial class GameForm : Form {
         Player.AddItem(new ItemDrop.Gems.Sapphire());
 
         // Initialize Shop
-        if (shop != null) Shop = shop;
+        Shop = shop ?? Shop;
 
         // Initialize GameForm
-        Instance = this;
+        Form = this;
 
         SuspendLayout();
         ClientSize = new Size(ScreenWidth, ScreenHeight);
@@ -50,13 +48,10 @@ public partial class GameForm : Form {
         MaximizeBox = false;
         Text = "RPG Game";
         ResumeLayout(false);
-        KeyPreview = true;
+        KeyPreview = false;
         DoubleBuffered = true; // To avoid flickering
         Width = ScreenWidth;
         Height = ScreenHeight;
-
-        _location = Location;
-        _controls = Controls;
         
         // Initialize Game buttons
         InitializeButtons();
@@ -69,18 +64,9 @@ public partial class GameForm : Form {
 
     
 
-
-
-    
     
 
-    private readonly Effects CurrentEffect = new Effects();
-    private void Attack(NpcCharacter npc) {
-        CurrentEffect.WeaponEffect(Player, npc);
-
-        Player.PlayerActions.Attack(npc);
-    }
-
+    
 
     private static World? nextWorld = null;
     private static World? previousWorld = null;
@@ -89,11 +75,9 @@ public partial class GameForm : Form {
     private void GameForm_Paint(object? sender, PaintEventArgs e) {
         var g = e.Graphics;
         
-        if (Player.CurrentState == ICharacter.State.Attacking) {
-            if (Player.CurrentWeapon.Type == ItemType.MeleeWeapon) CurrentEffect.DrawSwordEffect(g);
-            if (Player.CurrentWeapon.Type == ItemType.MageWeapon) CurrentEffect.DrawMageEffect(g);
-            if (Player.CurrentWeapon.Type == ItemType.RangedWeapon) CurrentEffect.DrawRangedEffect(g);
-        }
+        // Draw all current effects on screen
+        Effect.DrawEffects(g);
+        
 
         // Check if the world has changed
         int currentWorldIndex = GameInstance.Worlds.IndexOf(Player.CurrentWorld!);
@@ -123,8 +107,8 @@ public partial class GameForm : Form {
     }
 
     public static void RefreshPage() {
-        if (Instance == null) throw new InvalidOperationException("No active GameForm instance is available.");
+        if (Form == null) throw new InvalidOperationException("No active GameForm instance is available.");
 
-        Instance.Invalidate();
+        Form.Invalidate();
     }
 }

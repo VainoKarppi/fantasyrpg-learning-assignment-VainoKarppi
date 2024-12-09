@@ -4,43 +4,26 @@
 
 
 
-public class Player : ICharacter, IWorldChanger {
+public class Player : Character, IWorldChanger {
 
-    public int X { get; set; } = GUI.GameForm.ScreenWidth / 2;
-    public int Y { get; set; } = (GUI.GameForm.ScreenHeight - GUI.GameForm.StatsBarHeight) / 2;
-    public int Width { get; set; } = 20;
-    public int Height { get; set; } = 20;
-    public Color Color => Color.Blue;
+    public static Color Color => Color.Blue;
     public Rectangle Bounds => new Rectangle(X, Y, Width, Height);
 
 
 
-    public string Name { get; set; }
-    public World CurrentWorld { get; set; }
-
-    public int ID { get; set; } = -1;
-    
-
-    public int Health { get; set; } = 100;
-    public int Mana { get; set; } = 100;
-    public ICharacter.State CurrentState { get; set; }
-
-    public ItemArmor? CurrentArmor { get; set; }
-    public ItemWeapon CurrentWeapon { get; set; }
 
     public int? Money { get; set; } = 0;
 
     // Items in Backpack
     public List<ItemBase> InventoryItems { get; set; } = [];
 
-    public IPlayerActions PlayerActions{ get; set; }
 
     public List<IQuest> QuestList { get; set; } = [];
     public IQuest? CurrentQuest { get; set; }
     public List<string> CompletedQuests { get; set; } = [];
 
     //--- EVENTS
-    public static event Action<Player, ICharacter?>? OnPlayerKilled;
+    public static event Action<Player, Character?>? OnPlayerKilled;
     public static event Action<Player>? OnPlayerCreated;
     public static event Action<Player>? OnPlayerRespawn;
 
@@ -60,7 +43,7 @@ public class Player : ICharacter, IWorldChanger {
         
         CurrentWorld = startWorld;
         Name = playerName;
-        PlayerActions = new PlayerActions(this);
+        Actions = new PlayerActions(this);
         GameInstance.AddPlayerToInstance(this);
 
         CurrentWeapon = new MeleeWeapon.Fists();
@@ -68,7 +51,7 @@ public class Player : ICharacter, IWorldChanger {
         OnPlayerCreated?.InvokeFireAndForget(this);
     }
 
-    public void KillPlayer(ICharacter? killer = null) {
+    public override void Kill(Character? killer = null) {
         PlayerStatistics.DeathsCount++;
 
         OnPlayerKilled?.InvokeFireAndForget(this, killer);
@@ -86,7 +69,8 @@ public class Player : ICharacter, IWorldChanger {
         ChangeWorld(homeWorld);
 
         X = GUI.GameForm.ScreenWidth / 2;
-        Y = GUI.GameForm.ScreenHeight / 2;  
+        Y = GUI.GameForm.ScreenHeight / 2;
+        GUI.Effect.Effects.Clear();
 
         OnPlayerRespawn?.InvokeFireAndForget(this); 
     }
@@ -135,29 +119,6 @@ public class Player : ICharacter, IWorldChanger {
         return InventoryItems.Remove(item);
     }
 
-    public virtual void DebugDisplayInventory() {
-        Console.WriteLine("-------------------");
-        Console.WriteLine($"({InventoryItems.Count}) Items:");
-
-        foreach (object item in InventoryItems) {
-            var nameProperty = item.GetType().GetProperty("Name")?.GetValue(item);
-            if (nameProperty != null) Console.Write($"    {nameProperty}");
-
-            var damageProperty = item.GetType().GetProperty("Damage")?.GetValue(item);
-            if (damageProperty != null) Console.Write($": Damage: {damageProperty}");
-
-            var defenceProperty = item.GetType().GetProperty("Defence")?.GetValue(item);
-            if (defenceProperty != null) Console.Write($", Defence: {defenceProperty}");
-
-            var durabilityProperty = item.GetType().GetProperty("Durability")?.GetValue(item);
-            if (durabilityProperty != null) Console.Write($", Durability: {durabilityProperty}");
-
-            var priceProperty = item.GetType().GetProperty("Price")?.GetValue(item);
-            if (priceProperty != null) Console.Write($", Price: {priceProperty}");
-            Console.Write("\n");
-        }
-        Console.WriteLine("\n-------------------");
-    }
 
     public void ChangeWeapon(ItemWeapon newWeapon) {
         if (CurrentWeapon == null) {

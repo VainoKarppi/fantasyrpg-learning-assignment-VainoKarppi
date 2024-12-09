@@ -48,12 +48,10 @@ public partial class GameForm : Form {
             var result = form.ShowDialog();
 
             if (result == DialogResult.OK && !string.IsNullOrWhiteSpace(textBox.Text)) {
-                return textBox.Text;
+                return textBox.Text.TrimStart().TrimEnd();
             }
 
-            if (result != DialogResult.OK) {
-                Environment.Exit(1); // X -> Close game
-            }
+            if (result != DialogResult.OK) Environment.Exit(1); // X -> Close game
         }
     }
 }

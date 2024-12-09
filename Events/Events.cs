@@ -50,11 +50,11 @@ public class GameEventListener {
     }
 
 
-    private void HandlePlayerKilled(Player player, ICharacter? killer) {
+    private void HandlePlayerKilled(Player player, Character? killer) {
         if (killer != null) {
-            MessageBox.Show($"You were killed by: {killer.Name}.\n\nRespawn?", "You Died", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            MessageBox.Show($"You were killed by: {killer.Name}", "You Died", MessageBoxButtons.OK, MessageBoxIcon.Information);
         } else {
-            MessageBox.Show($"You Died!\n\nRespawn?");
+            MessageBox.Show($"You Died!");
         }
 
         GUI.GameForm.RefreshPage();
@@ -67,9 +67,11 @@ public class GameEventListener {
     private void HandleNpcCreated(NpcCharacter npc) {
         Console.WriteLine($"Created NPC: {npc.Name} to World: {npc.CurrentWorld.Name}");
     }
-    private void HandleNpcAttack(Player player, NpcCharacter npc, int damage) {
+    private void HandleNpcAttack(NpcCharacter npc, Character target, int damage) {
         Console.WriteLine($"{npc.Name} hit you! You took {damage} damage!");
-        GameForm.RefreshPage(); // update player health
+
+        new Effect(target, npc, Effect.EffectType.Blood);
+        GameForm.RefreshPage();
     }
     private void HandleNpcAction(NpcCharacter npc) {
         
@@ -88,6 +90,8 @@ public class GameEventListener {
 
     private void HandlePlayerAttack(Player player, NpcCharacter npc, int damage) {
         Console.WriteLine($"You've hit {npc.Name} with {player.CurrentWeapon?.Name}: Damage dealt: {damage}");
+
+        new Effect(npc, player, Effect.EffectType.Blood);
     }
     private void HandlePlayerAction(Player player) {
     }
@@ -95,29 +99,6 @@ public class GameEventListener {
 
     private void HandlePotionUse(Player player, ItemPotion potion) {
 
-        // Health potion
-        if (potion is ItemPotion.HealthPotion) {
-            if (player.Health == 100) {
-                MessageBox.Show("Already full health!");
-                return;
-            }
-
-            player.Health = Math.Min(player.Health + potion.Effect, 100);
-            Console.WriteLine($"Health potion used! Health: {player.Health}");
-        }
-
-
-        // Mana potion
-        if (potion is ItemPotion.ManaPotion) {
-            if (player.Mana == 100) {
-                MessageBox.Show("Already full mana!");
-                return;
-            }
         
-            player.Mana = Math.Min(player.Mana + potion.Effect, 100);
-            Console.WriteLine($"Mana potion used! Mana: {player.Mana}");   
-        }
-
-        player.InventoryItems.Remove(potion);
     }
 }

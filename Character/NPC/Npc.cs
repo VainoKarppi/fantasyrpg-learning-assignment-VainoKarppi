@@ -1,35 +1,18 @@
 
 // Base Character Class
-public partial class NpcCharacter : ICharacter, IWorldChanger {
-    public string? Name { get; set; }
-    public int MaxHealth { get; set; } = 100;
-    public int Health { get; set; }
-    public int Mana { get; set; }
-    public int Strength { get; set; }
-    public int Agility { get; set; }
+public partial class NpcCharacter : Character, IWorldChanger {
+
     public int AttackTime { get; set; } = 5;
-    public ICharacter.State CurrentState { get; set; }
-    public ItemWeapon CurrentWeapon { get; set; }
+
 
 
     // 3D parameters
-    public int X { get; set; }
-    public int Y { get; set; }
-    public int Width { get; set; } = 20;
-    public int Height { get; set; } = 20;
+
     public Color Color => Color.Red;
     public Rectangle Bounds => new Rectangle(X, Y, Width, Height);
 
 
 
-
-    public int ID { get; set; } = -1;
-
-    public ItemArmor Armor { get; set; }
-
-    public INpcActions? NpcActions { get; set; }
-
-    public World CurrentWorld { get; set; }
 
     // Events
     public static event Action<NpcCharacter>? OnNpcCreated;
@@ -42,12 +25,11 @@ public partial class NpcCharacter : ICharacter, IWorldChanger {
         X = xPos;
         Y = yPos;
 
-        Armor = new ItemArmor();
+        CurrentArmor = new ItemArmor();
     }
     public void TransferWorld(World newWorld) {
-        if (newWorld == null) {
-            throw new ArgumentNullException(nameof(newWorld), "New world cannot be null.");
-        }
+        if (newWorld == null) throw new ArgumentNullException(nameof(newWorld), "New world cannot be null.");
+        
 
         // Remove NPC from current world and add to the new world
         CurrentWorld.RemoveNPC(this);
@@ -55,10 +37,10 @@ public partial class NpcCharacter : ICharacter, IWorldChanger {
         CurrentWorld = newWorld;
     }
 
-    public void KillNPC(Player? killer = null) {
+    public override void Kill(Character? killer = null) {
         CurrentWorld.RemoveNPC(this);
 
-        if (killer != null) killer.PlayerStatistics.EnemiesKilled++;
+        if (killer is Player) (killer as Player)!.PlayerStatistics.EnemiesKilled++;
 
         OnNpcKilled?.InvokeFireAndForget(this, killer);
     }

@@ -29,23 +29,11 @@ public class GameInstance {
         // Dont trigger enemy attack if no enemies left
         if (fightWorld.NPCs.Count <= 0) return;
 
-        Random random = new Random();
-
-        int randomIndex = random.Next(fightWorld.NPCs.Count);
-        NpcCharacter npc = fightWorld.NPCs[randomIndex];
-
-
+        NpcCharacter? npc = World.GetNearestTarget(player);
         
-        if (random.Next(100) < 50) {
-            npc.NpcActions?.Attack(player);
-        } else {
-            npc.NpcActions?.Attack(player);
-        }
+        if (npc != null && npc.CanAttack(player)) npc?.Actions.Attack(player);
     }
 
-    private void HandleNpcAction(NpcCharacter npc) {
-        
-    }
 
     
     public static void RemoveAllNpcs() {
@@ -136,7 +124,7 @@ public class World {
         Name = worldName;
     }
 
-    public static double CalculateDistance(ICharacter start, ICharacter end) {
+    public static double CalculateDistance(Character start, Character end) {
         double deltaX = end.X + end.Width / 2 - (start.X + start.Width / 2); // center
         double deltaY = end.Y + end.Height / 2 - (start.Y + start.Height / 2); // center
 
@@ -169,7 +157,6 @@ public class World {
             if (closestTarget == null || distance < closestDistance) {
                 closestTarget = npc;
                 closestDistance = distance; // Update the closest distance
-                Console.WriteLine(closestDistance);
             }
         }
 
@@ -183,8 +170,10 @@ public class World {
         return NPCs;
     }
 
-    public List<NpcCharacter> RemoveNPC(NpcCharacter npc) {
-        NPCs.Remove(npc);
+    public List<NpcCharacter> RemoveNPC(Character npc) {
+        if (npc is not NpcCharacter) return NPCs;
+
+        NPCs.Remove((NpcCharacter)npc);
 
         return NPCs;
     }
