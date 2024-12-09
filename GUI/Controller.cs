@@ -56,6 +56,18 @@ public partial class GameForm : Form {
             ShowStats();
         }
 
+        // Attack
+        if (pressedKeys.Contains(Keys.Space)) {
+            NpcCharacter? npc = World.GetNearestTarget(Player);
+            
+            if (npc is null) return;
+            
+            if ((Player as ICharacter).CanAttack(npc)) {
+                CurrentEffect.WeaponEffect(Player, npc);
+                Player.PlayerActions.Attack(npc);
+            }
+        }
+
         // Redraw the screen
         Invalidate();
     }
@@ -147,8 +159,6 @@ public partial class GameForm : Form {
             if (Player.Bounds.IntersectsWith(npc.Bounds)) {
                 // Show dialog if collision detected
                 pressedKeys.Clear();
-
-                ShowNpcDialog(npc);
 
                 break;
             }

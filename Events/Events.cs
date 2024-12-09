@@ -79,15 +79,8 @@ public class GameEventListener {
 
         Console.WriteLine($"Enemy Killed!");
 
-
-        // TODO move elsewhere?
         ItemDrop? itemDrop = DropManager.GetRandomDrop();
-        if (itemDrop is null) {
-            Console.WriteLine("No drop!");
-        } else {
-            Console.WriteLine($"You got: {itemDrop.Name}");
-            player.AddItem(itemDrop);
-        }
+        if (itemDrop != null) player.AddItem(itemDrop);
     }
 
 

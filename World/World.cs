@@ -136,6 +136,46 @@ public class World {
         Name = worldName;
     }
 
+    public static double CalculateDistance(ICharacter start, ICharacter end) {
+        double deltaX = end.X + end.Width / 2 - (start.X + start.Width / 2); // center
+        double deltaY = end.Y + end.Height / 2 - (start.Y + start.Height / 2); // center
+
+        return Math.Sqrt(deltaX * deltaX + deltaY * deltaY);
+    }
+    public static double CalculateDistance(double x1, double y1, double x2, double y2) {
+        double deltaX = x2 - x1;
+        double deltaY = y2 - y1;
+
+        return Math.Sqrt(deltaX * deltaX + deltaY * deltaY);
+    }
+    public static double CalculateDistance(int x1, int y1, int x2, int y2) {
+        int deltaX = x2 - x1;
+        int deltaY = y2 - y1;
+
+        return Math.Sqrt(deltaX * deltaX + deltaY * deltaY); // Use double to return decimal results
+    }
+
+    public static NpcCharacter? GetNearestTarget(Player player) {
+        if (player.CurrentWorld.NPCs.Count == 0) return null;
+
+        NpcCharacter? closestTarget = null;
+        double closestDistance = -1;
+
+        foreach (NpcCharacter npc in player.CurrentWorld.NPCs) {
+
+            double distance = CalculateDistance(player, npc);
+
+            // If the current NPC is the first one or is closer than the previous one
+            if (closestTarget == null || distance < closestDistance) {
+                closestTarget = npc;
+                closestDistance = distance; // Update the closest distance
+                Console.WriteLine(closestDistance);
+            }
+        }
+
+        return closestTarget;
+    }
+
     // Method to add an NPC to the world
     public List<NpcCharacter> AddNPC(NpcCharacter npc) {
         NPCs.Add(npc);

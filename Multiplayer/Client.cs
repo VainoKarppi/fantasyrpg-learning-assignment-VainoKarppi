@@ -17,12 +17,9 @@ public enum NetworkMessageType {
     
 }
 
-public class NetworkMessage {
-    public NetworkMessageType MessageType { get; set; }
-    public dynamic? Data { get; set; }
-}
 
-public class NetworkObject {
+
+public class NetworkMessage {
     public NetworkMessageType MessageType { get; set; }
     public int? ID { get; set; }
     public int? Health { get; set; }
@@ -34,15 +31,16 @@ public class NetworkObject {
 
 static class MultiplayerClient {
     //--- EVENTS
+    private static NetworkEventListener? EventListeners;
     public static event Action<TcpClient, Player>? OnConnectStart;
     public static event Action<TcpClient, Player, Exception?>? OnConnectEnd;
-    public static event Action? OnDisconnect;
+    public static event Action<bool>? OnDisconnect;
     
 
     public static TcpClient? Client;
     private static NetworkStream? Stream;
 
-    public static List<NetworkObject> OtherPlayers = [];
+    public static List<NetworkMessage> OtherPlayers = [];
 
     public static void Connect(string ipAddress, int port, Player player) {
         if (player is null) throw new Exception("No player object found!");
@@ -53,12 +51,12 @@ static class MultiplayerClient {
             Client.Connect(ipAddress, port);
 
             OnConnectStart?.InvokeFireAndForget(Client!, player);
-
+            
             Stream = Client.GetStream();
 
-            // Initialize Network Events handling
-            new NetworkEventListener();
-
+            // Initialize event listeners
+            if (EventListeners is null) EventListeners = new NetworkEventListener();
+            
             // Start receiving data in a separate thread
             Thread receiveThread = new Thread(ReceiveMessages);
             receiveThread.Start();
@@ -66,12 +64,10 @@ static class MultiplayerClient {
 
             SendMessageAsync(new { MessageType = NetworkMessageType.Connect, player.Name, CurrentWorldName = player.CurrentWorld!.Name, player.X, player.Y });
         } catch (Exception ex) {
-            Console.WriteLine("Error connecting to server: " + ex.Message);
+            Console.WriteLine("CLIENT: Error connecting to server: " + ex.Message);
 
             OnConnectEnd?.InvokeFireAndForget(Client!, player, ex);
             Disconnect();
-
-            throw;
         }
     }
 
@@ -101,7 +97,7 @@ static class MultiplayerClient {
                 // Send the prefixed message
                 await Stream.WriteAsync(fullMessage);
             } catch (Exception ex) {
-                Console.WriteLine($"Error sending message: {ex.Message}");
+                Console.WriteLine($"CLIENT: Error sending message: {ex.Message}");
             }
         });
     }
@@ -131,7 +127,7 @@ static class MultiplayerClient {
                 string receivedMessage = Encoding.UTF8.GetString(messageBuffer);
                 Console.WriteLine($"CLIENT: {receivedMessage}");
 
-                NetworkObject? unit = JsonSerializer.Deserialize<NetworkObject>(receivedMessage);
+                NetworkMessage? unit = JsonSerializer.Deserialize<NetworkMessage>(receivedMessage);
                 if (unit == null) continue;
 
                 NetworkMessageType? method = unit.MessageType;
@@ -164,7 +160,7 @@ static class MultiplayerClient {
                     // Add to list if not found
                     if (OtherPlayers.FindIndex(p => p.ID == unit.ID) == -1) OtherPlayers.Add(unit);
 
-                    NetworkObject? playerToUpdate = OtherPlayers.FirstOrDefault(x => x.ID == unit.ID);
+                    NetworkMessage? playerToUpdate = OtherPlayers.FirstOrDefault(x => x.ID == unit.ID);
                     if (playerToUpdate == null) continue;
 
                     if (unit.Name != null) playerToUpdate.Name = unit.Name;
@@ -220,10 +216,10 @@ static class MultiplayerClient {
             }
         }
 
-        Disconnect();
+        Disconnect(true);
     }
 
-    public static void Disconnect() {
+    public static void Disconnect(bool serverShutdown = false) {
         OtherPlayers.Clear();
         GameForm.Player.ID = -1;
 
@@ -232,11 +228,10 @@ static class MultiplayerClient {
         Client = null;
         Stream = null;
 
-        if (Client == null) return;
+        Console.WriteLine(serverShutdown ? "CLIENT: Server shutdown!" : "CLIENT: Disconnected from the server.");
 
-        Console.WriteLine("Disconnected from the server.");
-
-        // TODO add variable to check if server shutdown or client disconnect
-        OnDisconnect?.InvokeFireAndForget();
+        OnDisconnect?.InvokeFireAndForget(serverShutdown);
+        
+        GameForm.RefreshPage();
     }
 }

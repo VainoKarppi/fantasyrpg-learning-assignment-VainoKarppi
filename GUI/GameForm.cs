@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -66,96 +67,20 @@ public partial class GameForm : Form {
     }
 
 
-    public static string PromptForUsername() {
-        using var form = new Form();
-
-        form.Text = "Enter Username";
-        form.StartPosition = FormStartPosition.CenterScreen;
-        form.Width = 300;
-        form.Height = 150;
-        form.MaximizeBox = false;
-        form.MinimizeBox = false;
-
-        // Label
-        var label = new Label {
-            Text = "Please enter username:",
-            Left = 10,
-            Top = 10,
-            Width = 260
-        };
-        form.Controls.Add(label);
-
-        // TextBox
-        var textBox = new TextBox {
-            Left = 10,
-            Top = 40,
-            Width = 260,
-            Text = "Player"
-        };
-        form.Controls.Add(textBox);
-
-        // OK Button
-        var okButton = new Button {
-            Text = "OK",
-            Left = 100,
-            Width = 80,
-            Top = 80,
-            DialogResult = DialogResult.OK
-        };
-        form.Controls.Add(okButton);
-
-        form.AcceptButton = okButton; // Trigger OK on Enter key press
-
-        // Show Dialog and Validate Input
-        while (true) {
-            var result = form.ShowDialog();
-
-            if (result == DialogResult.OK && !string.IsNullOrWhiteSpace(textBox.Text)) {
-                return textBox.Text;
-            }
-
-            if (result != DialogResult.OK) {
-                Environment.Exit(1); // X -> Close game
-            }
-        }
-    }
-    
-
     
 
 
 
-    // Show the dialog to ask whether to attack or flee
-    private void ShowNpcDialog(NpcCharacter npc) {
-        var result = MessageBox.Show("You have encountered an NPC! Do you want to attack or flee?", 
-                                     "NPC Encounter", 
-                                     MessageBoxButtons.YesNo);
-
-        // Yes means attack, No means flee
-        if (result == DialogResult.Yes) {
-            Attack(npc);
-        } else {
-            Flee();
-        }
-    }
-
+    
     
 
-
-    // Handle the attack action
+    private readonly Effects CurrentEffect = new Effects();
     private void Attack(NpcCharacter npc) {
-        
+        CurrentEffect.WeaponEffect(Player, npc);
+
         Player.PlayerActions.Attack(npc);
-
-        TriggerBloodSplashEffect(npc);
     }
 
-    // Handle the flee action
-    private void Flee() {
-        // Flee logic: Move player away from the NPC
-        Player.X += 50; // Example flee action: Move the player to the right
-        Player.Y += 50; // Move player downward
-    }
 
     private static World? nextWorld = null;
     private static World? previousWorld = null;
@@ -163,6 +88,12 @@ public partial class GameForm : Form {
 
     private void GameForm_Paint(object? sender, PaintEventArgs e) {
         var g = e.Graphics;
+        
+        if (Player.CurrentState == ICharacter.State.Attacking) {
+            if (Player.CurrentWeapon.Type == ItemType.MeleeWeapon) CurrentEffect.DrawSwordEffect(g);
+            if (Player.CurrentWeapon.Type == ItemType.MageWeapon) CurrentEffect.DrawMageEffect(g);
+            if (Player.CurrentWeapon.Type == ItemType.RangedWeapon) CurrentEffect.DrawRangedEffect(g);
+        }
 
         // Check if the world has changed
         int currentWorldIndex = GameInstance.Worlds.IndexOf(Player.CurrentWorld!);

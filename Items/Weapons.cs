@@ -4,6 +4,7 @@
 public class ItemWeapon : ItemBase {
     public double Damage { get; set; }
     public int Durability { get; set; }
+    public int Range { get; set; } = 35;
 
     public ItemWeapon() {
         Type = ItemType.WeaponBase;
@@ -44,6 +45,7 @@ public class MeleeWeapon : ItemWeapon {
             Name = "Legendary Sword";
             Damage = 300;
             Durability = 200;
+            Range = 45;
 
             SellPrice = 1000;
             
@@ -70,6 +72,8 @@ public class RangedWeapon : ItemWeapon {
             Damage = 30;
             Durability = 40;
 
+            Range = 150;
+
             BuyPrice = 200;
             SellPrice = 100;
         }
@@ -81,6 +85,8 @@ public class RangedWeapon : ItemWeapon {
             Name = "Legendary Bow";
             Damage = 300;
             Durability = 80;
+            Range = 190;
+
             SellPrice = 1200;
         }
     }
@@ -100,6 +106,7 @@ public class MageWeapon : ItemWeapon {
             Name = "Basic Magic Wand";
             Damage = 15;
             Durability = 40;
+            Range = 230;
 
             BuyPrice = 300;
             SellPrice = 80;
@@ -112,6 +119,7 @@ public class MageWeapon : ItemWeapon {
             Name = "Legendary Magic Wand";
             Damage = 350;
             Durability = 50;
+            Range = 270;
 
             SellPrice = 1400;
         }

@@ -35,7 +35,6 @@ public abstract class QuestBase : IQuest {
             Quests.TriggerQuestEndedEvent(this, true);
             HandleRewards();
 
-            // TODO Decide if this should be handled automatically or inside an event?
             QuestOwner.RemoveQuest(this);
 
             // Mark quest as completed

@@ -191,6 +191,8 @@ public partial class GameForm : Form {
             button.Location = new Point(buttonAreaLeft + 10, button.Location.Y);  // Adjust position if necessary
             button.Size = new Size(buttonAreaWidth - 20, 28);  // Adjust size if necessary
 
+            button.GotFocus += (s, e) => ActiveControl = null; // Disable spacebar/tab select button
+
             // Only add the button to the controls collection once (if it's not added already)
             if (!Controls.Contains(button)) {
                 Controls.Add(button);

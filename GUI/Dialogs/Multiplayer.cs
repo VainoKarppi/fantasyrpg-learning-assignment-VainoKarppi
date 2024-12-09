@@ -35,21 +35,17 @@ public partial class GameForm : Form {
 
     private void DrawMultiplayerButton() {
         // Add multiplayer button to the top-right
-        Button multiPlayer = new Button {
+        Button multiplayerButton = new Button {
             Text = "Multiplayer",
-            Location = new Point(ScreenWidth - 130, 5), // Positioned at the top-right with padding
+            Location = new Point(ScreenWidth - 130, 5),
             Size = new Size(110, 30)
         };
 
-        // Add click event if needed
-        multiPlayer.Click += (sender, e) => {
-            ShowMultiplayerDialog();
-        };
+        multiplayerButton.GotFocus += (s, e) => ActiveControl = null; // Disable TAB/Space button select and press
 
-        // Add the multiplayer button to controls if not already present
-        if (!Controls.Contains(multiPlayer)) {
-            Controls.Add(multiPlayer);
-        }
+        multiplayerButton.Click += (sender, e) => ShowMultiplayerDialog();
+
+        Controls.Add(multiplayerButton);
     }
 
 
@@ -57,8 +53,11 @@ public partial class GameForm : Form {
         // Create a new form for the options
         Form multiplayerForm = new Form {
             Text = "Multiplayer Options",
-            Size = new Size(300, 150),
-            StartPosition = FormStartPosition.CenterParent
+            Size = new Size(300, 120),
+            StartPosition = FormStartPosition.CenterParent,
+            FormBorderStyle = FormBorderStyle.FixedSingle,
+            MinimizeBox = false,
+            MaximizeBox = false
         };
 
         // Create a label for the prompt
@@ -67,15 +66,15 @@ public partial class GameForm : Form {
             AutoSize = false,
             TextAlign = ContentAlignment.MiddleCenter,
             Dock = DockStyle.Top,
-            Height = 50
+            Height = 30
         };
         
 
-        // Create a Join button
+        //--- JOIN BUTTON
         Button joinButton = new Button {
             Text = "Join",
             Size = new Size(100, 30),
-            Location = new Point(50, 70)
+            Location = new Point(50, 40)
         };
         joinButton.Click += (sender, e) => {
             try {
@@ -100,11 +99,11 @@ public partial class GameForm : Form {
             Invalidate();
         };
 
-        // Create a Join button
+        //--- DISCONNECT BUTTON
         Button disconnectButton = new Button {
             Text = "Disconnect",
             Size = new Size(100, 30),
-            Location = new Point(50, 70)
+            Location = new Point(100, 40)
             
         };
         disconnectButton.Click += (sender, e) => {
@@ -112,18 +111,16 @@ public partial class GameForm : Form {
 
             if (MultiplayerServer.IsHost()) MultiplayerServer.Stop();
 
-            MultiplayerClient.OtherPlayers.Clear();
-
             multiplayerForm.Close();
             Invalidate();
         };
         
 
-        // Create a Host button
+        //--- HOST BUTTON
         Button hostButton = new Button {
             Text = "Host",
             Size = new Size(100, 30),
-            Location = new Point(160, 70)
+            Location = new Point(160, 40)
         };
         hostButton.Click += (sender, e) => {
             // Start over
@@ -131,11 +128,11 @@ public partial class GameForm : Form {
             Player.X = ScreenWidth / 2;;
             Player.Y = (ScreenHeight - StatsBarHeight) / 2;
 
-            new Thread(() => MultiplayerServer.Start("0.0.0.0", 7842)).Start();
+            new Thread(() => MultiplayerServer.Start("0.0.0.0", 7842)).Start(); // Start in new thread
             MultiplayerClient.Connect("127.0.0.1", 7842, Player); // Locally connect to self host server
-            multiplayerForm.Close(); // Close the form after selection
+
+            multiplayerForm.Close();
             Invalidate();
-            // Add logic to host a session here
         };
 
 

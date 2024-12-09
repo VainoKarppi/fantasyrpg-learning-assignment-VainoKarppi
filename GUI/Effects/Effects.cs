@@ -33,8 +33,8 @@ public partial class GameForm : Form {
         _location = originalLocation;
     }
 
-    public static async Task TriggerBloodSplashEffect(ICharacter character) {
-        if (_controls is null) return;
+    public static async Task TriggerBloodSplashEffect(ICharacter? character) {
+        if (_controls is null || character is null) return;
 
         Point location = new Point(character.X + character.Height / 2, character.Y + character.Width / 2);
 

@@ -1,22 +1,16 @@
 ﻿using System.Runtime.InteropServices;
 
 
-
-
-
-
 public class Program {
-    public const bool DEBUG = true;
-    #if DEBUG
-        [DllImport("kernel32.dll")]
-        private static extern bool AllocConsole();
-    #endif
 
-    public static void Main() {
-        #if DEBUG
-            if (DEBUG) AllocConsole();
-            Console.WriteLine("Debug Console Started!");
-        #endif
+    [DllImport("kernel32.dll")]
+    private static extern bool AllocConsole();
+
+    public static void Main(string[] args) {
+        bool useDebug = args.ContainsIgnoreCase("debug");
+
+        if (useDebug) AllocConsole();
+        Console.WriteLine("Debug Console Started!");
 
         // Create game instance
         new GameInstance();

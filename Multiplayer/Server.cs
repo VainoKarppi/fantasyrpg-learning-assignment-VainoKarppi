@@ -9,26 +9,29 @@ using System.Collections;
 
 class MultiplayerServer {
     //--- EVENTS
-    public static event Action<TcpClient, NetworkObject>? OnClientConnect;
-    public static event Action<TcpClient, NetworkObject>? OnClientDisconnect;
+    public static event Action<TcpClient, NetworkMessage>? OnClientConnect;
+    public static event Action<TcpClient, NetworkMessage>? OnClientDisconnect;
     public static event Action? OnServerStart;
     public static event Action? OnServerStop;
 
 
     public static TcpListener? Server;
     private static bool ServerRunning;
+    private static CancellationTokenSource CancellationToken = new();
 
     private static TcpClient? HostClient;
 
-    private static readonly Dictionary<TcpClient, NetworkObject> Clients = [];
+    private static readonly Dictionary<TcpClient, NetworkMessage> Clients = [];
 
     public static bool IsHost() {
         return HostClient != null;
     }
 
-    public static void Start(string ipAddress, int port) {
+    public static async void Start(string ipAddress, int port) {
         if (ServerRunning) throw new Exception("Server already running!");
         if (Server == null) Server = new TcpListener(IPAddress.Parse(ipAddress), port);
+
+        CancellationToken = new CancellationTokenSource(); // Reset token
 
         Server.Start();
 
@@ -36,10 +39,11 @@ class MultiplayerServer {
 
         OnServerStart?.InvokeFireAndForget();
 
-        while (ServerRunning) {
+        Console.WriteLine("SERVER: Server started!");
+
+        while (!CancellationToken.IsCancellationRequested) {
             try {
-                TcpClient client = Server.AcceptTcpClient(); // Accept an incoming connection
-                Console.WriteLine("SERVER: Client connected!");
+                TcpClient client = await Server.AcceptTcpClientAsync(CancellationToken.Token);
 
                 if (HostClient is null) HostClient = client;
 
@@ -47,11 +51,11 @@ class MultiplayerServer {
                 Thread clientThread = new Thread(() => HandleClientAsync(client));
                 clientThread.Start();
             } catch (Exception ex) {
-                Console.WriteLine("Error: " + ex.Message);
+                if (ex is OperationCanceledException) return;
+
+                Console.WriteLine("SERVER: Error: " + ex.Message);
             }
         }
-
-        OnServerStop?.InvokeFireAndForget();
     }
 
     private static void SendMessageAsync(TcpClient client, object message) {
@@ -81,7 +85,7 @@ class MultiplayerServer {
                 // Send the prefixed message
                 await stream.WriteAsync(fullMessage);
             } catch (Exception ex) {
-                Console.WriteLine($"Error sending message: {ex.Message}");
+                Console.WriteLine($"SERVER: Error sending message: {ex.Message}");
             }
         });
     }
@@ -99,28 +103,23 @@ class MultiplayerServer {
         while (true) {
             try {
                 // Read message lenght
-                int bytesRead = await stream.ReadAsync(lengthBuffer);
-                if (bytesRead == 0) {
-                    // TODO REMOVE FROM LIST and notify other clients
-                    break;
-                }
+                int bytesRead = await stream.ReadAsync(lengthBuffer, CancellationToken.Token);
+                if (bytesRead == 0) break;
 
                 // Read JSON message from lenght
                 int messageLength = BitConverter.ToInt32(lengthBuffer, 0);
                 byte[] messageBuffer = new byte[messageLength];
                 int totalBytesRead = 0;
                 while (totalBytesRead < messageLength) {
-                    bytesRead = await stream.ReadAsync(messageBuffer.AsMemory(totalBytesRead, messageLength - totalBytesRead));
-                    if (bytesRead == 0) {
-                        // TODO REMOVE FROM LIST and notify other clients
-                        break;
-                    }
+                    bytesRead = await stream.ReadAsync(messageBuffer.AsMemory(totalBytesRead, messageLength - totalBytesRead), CancellationToken.Token);
+                    if (bytesRead == 0) break;
+                    
                     totalBytesRead += bytesRead;
                 }
 
                 string receivedMessage = Encoding.UTF8.GetString(messageBuffer);
                 
-                NetworkObject? unit = JsonSerializer.Deserialize<NetworkObject>(receivedMessage);
+                NetworkMessage? unit = JsonSerializer.Deserialize<NetworkMessage>(receivedMessage);
                 if (unit == null) continue;
 
                 NetworkMessageType? method = unit.MessageType;
@@ -130,13 +129,13 @@ class MultiplayerServer {
                 if (method == NetworkMessageType.Connect) {
                     unit.ID = GetID();
                     
-                    Console.WriteLine($"PLAYER: {unit.Name} Connected to server! ID: {unit.ID}");
+                    Console.WriteLine($"SERVER: Player: {unit.Name} Connected to server! ID: {unit.ID}");
 
                     // Send client id back to connected client
                     SendMessageAsync(thisClient, new { MessageType = NetworkMessageType.Connect, unit.ID });
                     
                     // Send sync data of other players
-                    foreach (KeyValuePair<TcpClient, NetworkObject> client in Clients) {
+                    foreach (KeyValuePair<TcpClient, NetworkMessage> client in Clients) {
                         SendMessageAsync(thisClient, new { MessageType = NetworkMessageType.ReceiveUpdateData, client.Value.ID, client.Value.Name, client.Value.X, client.Value.Y, client.Value.CurrentWorldName });
                     }
 
@@ -158,7 +157,7 @@ class MultiplayerServer {
 
                 //--- RECEIVE PLAYER DATA UPDATED
                 if (method == NetworkMessageType.SendUpdateData) {
-                    NetworkObject? player = Clients.SingleOrDefault(x => x.Value.ID == unit.ID).Value;
+                    NetworkMessage? player = Clients.SingleOrDefault(x => x.Value.ID == unit.ID).Value;
                     if (player is null) continue;
 
                     unit.MessageType = NetworkMessageType.ReceiveUpdateData;
@@ -169,7 +168,7 @@ class MultiplayerServer {
                     if (unit.CurrentWorldName != null) player.CurrentWorldName = unit.CurrentWorldName;
 
                     
-                    foreach (KeyValuePair<TcpClient, NetworkObject> client in Clients) {
+                    foreach (KeyValuePair<TcpClient, NetworkMessage> client in Clients) {
                         if (client.Key == thisClient) continue; // Dont send data back to sender
 
                         // TODO Only sync data if in same world
@@ -192,21 +191,20 @@ class MultiplayerServer {
                     if (unit.X.HasValue) npc.X = (int)unit.X;
                     if (unit.Y.HasValue) npc.X = (int)unit.Y;
                     if (unit.Health.HasValue) npc.Health = (int)unit.Health;
-                    // TODO update current world
+                    if (unit.CurrentWorldName != null) npc.CurrentWorld = GameInstance.GetWorld(unit.CurrentWorldName);
 
-                    foreach (KeyValuePair<TcpClient, NetworkObject> client in Clients) {
+                    foreach (KeyValuePair<TcpClient, NetworkMessage> client in Clients) {
                         if (client.Key == thisClient) continue; // Dont send data back to sender
 
                         SendMessageAsync(client.Key, unit);
                     }
                 }
 
-    
-
-                // TODO FORWARD to other clients
                 
             } catch (Exception ex) {
-                Console.WriteLine("Error handling client: " + ex.Message);
+                if (ex is OperationCanceledException) break;
+
+                Console.WriteLine("SERVER: Error handling client: " + ex.Message);
                 break;
             }
         }
@@ -219,15 +217,21 @@ class MultiplayerServer {
         thisClient.Close();
 
         // Send disconnect message to other players 
-        foreach (KeyValuePair<TcpClient, NetworkObject> client in Clients) {
+        foreach (KeyValuePair<TcpClient, NetworkMessage> client in Clients) {
             SendMessageAsync(client.Key, new { MessageType = NetworkMessageType.Disconnect, ID = disconnectClientId});
         }
     }
 
     public static void Stop() {
+        CancellationToken.Cancel();
+
+        OnServerStop?.InvokeFireAndForget();
+        
+        Server?.Stop();
+        Server?.Dispose();
         ServerRunning = false;
         Server = null;
         HostClient = null;
-        Console.WriteLine("Server stopped.");
+        Console.WriteLine("SERVER: Server stopped!");
     }
 }

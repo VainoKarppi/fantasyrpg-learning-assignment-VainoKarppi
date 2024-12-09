@@ -8,6 +8,8 @@ public partial class NpcCharacter : ICharacter, IWorldChanger {
     public int Strength { get; set; }
     public int Agility { get; set; }
     public int AttackTime { get; set; } = 5;
+    public ICharacter.State CurrentState { get; set; }
+    public ItemWeapon CurrentWeapon { get; set; }
 
 
     // 3D parameters

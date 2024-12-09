@@ -30,7 +30,7 @@ public abstract class BaseNpcActions(NpcCharacter npc) : INpcActions {
 
     public virtual int CalculateDamageToPlayer(Player player) {
         // TODO similiar to player attack, just dont use armor to calculate, instead use npc class
-        return 20;
+        return new Random().Next(5,20);
     }
 
     public void AttackFromNpcAsync(Player player) {

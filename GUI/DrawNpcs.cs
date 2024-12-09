@@ -54,7 +54,7 @@ public partial class GameForm : Form {
     
     private static void DrawOtherPlayers(Graphics g) {
         // Draw other Players
-        foreach (NetworkObject networkPlayer in MultiplayerClient.OtherPlayers) {
+        foreach (NetworkMessage networkPlayer in MultiplayerClient.OtherPlayers) {
             if (networkPlayer.X is null || networkPlayer.Y is null) continue;
 
             if (networkPlayer.CurrentWorldName == null || networkPlayer.CurrentWorldName.ToLower() != Player.CurrentWorld!.Name.ToLower()) continue;
@@ -79,7 +79,7 @@ public partial class GameForm : Form {
             // Draw other player health bar below the player
             if (networkPlayer.Health == null) networkPlayer.Health = 100;
 
-            int maxPlayerHealth = 100; // TODO move else where or calculate by armor
+            int maxPlayerHealth = 100;
  
             float healthBarWidth = 50;  // Set width of the health bar
             float healthBarHeight = 10;  // Set height of the health bar

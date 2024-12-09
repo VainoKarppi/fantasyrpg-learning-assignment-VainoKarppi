@@ -1,19 +1,7 @@
 
 
 
-public interface ICharacter {
-    int ID { get; }
-    string? Name { get; }
-    int Health { get; }
-    int Mana { get; }
 
-    public int X { get; set; }
-    public int Y { get; set; }
-    public int Width { get; }
-    public int Height { get; }
-    public Color Color => Color.Red;
-    public Rectangle Bounds => new Rectangle(X, Y, Width, Height);
-}
 
 
 public class Player : ICharacter, IWorldChanger {
@@ -35,6 +23,7 @@ public class Player : ICharacter, IWorldChanger {
 
     public int Health { get; set; } = 100;
     public int Mana { get; set; } = 100;
+    public ICharacter.State CurrentState { get; set; }
 
     public ItemArmor? CurrentArmor { get; set; }
     public ItemWeapon CurrentWeapon { get; set; }
@@ -58,9 +47,9 @@ public class Player : ICharacter, IWorldChanger {
 
     public Statistics PlayerStatistics { get; private set; } = new Statistics();
     public class Statistics {
-        public int EnemiesKilled { get; set; } // TODO
-        public int DeathsCount { get; set; } // TODO
-        public double DamageDealt { get; set; } // TODO
+        public int EnemiesKilled { get; set; }
+        public int DeathsCount { get; set; }
+        public double DamageDealt { get; set; }
         public double DamageTaken { get; set; } // TODO
 
         // TODO what else to add to statistics ???
@@ -79,7 +68,6 @@ public class Player : ICharacter, IWorldChanger {
         OnPlayerCreated?.InvokeFireAndForget(this);
     }
 
-    
     public void KillPlayer(ICharacter? killer = null) {
         PlayerStatistics.DeathsCount++;
 
