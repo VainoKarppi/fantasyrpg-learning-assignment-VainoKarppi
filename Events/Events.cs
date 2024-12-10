@@ -54,10 +54,10 @@ public class GameEventListener {
         if (killer != null) {
             MessageBox.Show($"You were killed by: {killer.Name}", "You Died", MessageBoxButtons.OK, MessageBoxIcon.Information);
         } else {
-            MessageBox.Show($"You Died!");
+            Effect.DeathEffect();
         }
 
-        GUI.GameForm.RefreshPage();
+        GameForm.RefreshPage();
     }
     private void HandlePlayerCreated(Player player) {
         Console.WriteLine($"Created Player: {player.Name}");

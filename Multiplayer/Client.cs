@@ -27,19 +27,18 @@ public class NetworkMessage {
     public int? Y { get; set; }
     public string? Name { get; set; }
     public string? CurrentWorldName { get; set; }
-    public Effect.EffectType EffectType { get; set; }
-    public dynamic? ExtraData { get; set; }
+    public int? TargetID { get; set; }
 }
 
 static class MultiplayerClient {
     public static Character? GetCharacterByID(int? id) {
+        if (id is null) return null;
+
         // TODO also return player
         NetworkMessage? foundCharcater = OtherPlayers.FirstOrDefault(p => p.ID == id);
         if (foundCharcater != null) {
-            Character character = new Player();
-            character.X = (int)foundCharcater.X!;
-            character.Y = (int)foundCharcater.Y!;
-
+            // Transform NetworkMessage to Player object
+            Character character = new Player{ ID = (int)id!, X = (int)foundCharcater.X!, Y = (int)foundCharcater.Y! };
             return character;
         }
 
@@ -245,15 +244,13 @@ static class MultiplayerClient {
                         Character? startCharacter = GetCharacterByID(message.ID);
                         if (startCharacter == null) return;
 
-                        if (startCharacter is Player && message.ExtraData != null) {
-                            startCharacter.X = (int)message.ExtraData!.X;
-                            startCharacter.Y = (int)message.ExtraData!.Y;
-                        }
+                        // Check if found
+                        Character? endCharacter = endCharacter = GetCharacterByID(message.TargetID);
 
                         _ = message.Name.ToLower() switch {
                             "melee" => new Effect(startCharacter, null, Effect.EffectType.Melee),
-                            "mage" => new Effect(startCharacter, new Point((int)message.X!, (int)message.Y!), Effect.EffectType.Mage),
-                            "ranged" => new Effect(startCharacter, new Point((int)message.X!, (int)message.Y!), Effect.EffectType.Ranged),
+                            "mage" => new Effect(startCharacter, endCharacter, Effect.EffectType.Mage),
+                            "ranged" => new Effect(startCharacter, endCharacter, Effect.EffectType.Ranged),
                             "blood" => new Effect(startCharacter, null, Effect.EffectType.Blood),
                             "potion" => new Effect(startCharacter, null, Effect.EffectType.Potion),
                             _ => throw new ArgumentException("Invalid name type"),

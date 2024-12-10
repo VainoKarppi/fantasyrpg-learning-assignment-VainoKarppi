@@ -27,12 +27,14 @@ public class NetworkEventListener {
     }
 
     private void HandleNpcAttack(NpcCharacter npc, Player player, int damage) {
+        MultiplayerClient.SendMessageAsync(new { MessageType = NetworkMessageType.CreateEffect, player.ID, Name = "Blood", CurrentWorldName = player.CurrentWorld.Name });
         MultiplayerClient.SendMessageAsync(new { MessageType = NetworkMessageType.SendUpdateData, player.ID, player.Health, CurrentWorldName = player.CurrentWorld.Name });
     }
 
 
 
     private void HandlePlayerAttack(Player player, Character npc, int damage) {
+        MultiplayerClient.SendMessageAsync(new { MessageType = NetworkMessageType.CreateEffect, npc.ID, Name = "Blood", CurrentWorldName = npc.CurrentWorld.Name });
         MultiplayerClient.SendMessageAsync(new { MessageType = NetworkMessageType.SendUpdateDataNpc, npc.ID, npc.Health, CurrentWorldName = npc.CurrentWorld.Name });
     }
 }

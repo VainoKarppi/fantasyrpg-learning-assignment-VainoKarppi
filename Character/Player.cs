@@ -2,7 +2,7 @@
 
 
 
-
+using GUI;
 
 public class Player : Character, IWorldChanger {
 
@@ -69,9 +69,9 @@ public class Player : Character, IWorldChanger {
         World homeWorld = GameInstance.Worlds.First(x => x.IsSafeWorld);
         ChangeWorld(homeWorld);
 
-        X = GUI.GameForm.ScreenWidth / 2;
-        Y = GUI.GameForm.ScreenHeight / 2;
-        GUI.Effect.Effects.Clear();
+        X = GameForm.ScreenWidth / 2;
+        Y = (GameForm.ScreenHeight - GameForm.StatsBarHeight) / 2;
+        Effect.Effects.Clear();
 
         OnPlayerRespawn?.InvokeFireAndForget(this); 
     }

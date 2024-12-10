@@ -13,24 +13,33 @@ public abstract class BaseNpcActions : IActions {
 
     // Implement Attack method
     public virtual void Attack(Character? target) {
+        if (npc == null || npc.CurrentWeapon == null || target == null) return;
+
+        if (npc!.CurrentWeapon.Type == ItemType.MeleeWeapon) {
+            new Effect(npc, target, Effect.EffectType.Melee);
+            MultiplayerClient.SendMessageAsync(new { MessageType = NetworkMessageType.CreateEffect, npc.ID, Name = "Melee", CurrentWorldName = npc.CurrentWorld.Name });
+        }
+
+
+        if (npc!.CurrentWeapon.Type == ItemType.MageWeapon) {
+            new Effect(npc, target, Effect.EffectType.Mage);
+            MultiplayerClient.SendMessageAsync(new { MessageType = NetworkMessageType.CreateEffect, npc.ID, TargetID = target?.ID, Name = "Mage", CurrentWorldName = npc.CurrentWorld.Name });
+        }
+        if (npc!.CurrentWeapon.Type == ItemType.RangedWeapon) {
+            new Effect(npc, target, Effect.EffectType.Ranged);
+            MultiplayerClient.SendMessageAsync(new { MessageType = NetworkMessageType.CreateEffect, npc.ID, TargetID = target?.ID, Name = "Range", CurrentWorldName = npc.CurrentWorld.Name });
+        }
+
         
-        if (npc.CurrentWeapon == null) return;
-        Console.WriteLine(npc.CurrentWeapon.Type);
+        int damage = npc.CalculateDamage(target!);
 
-        if (npc.CurrentWeapon.Type == ItemType.MeleeWeapon) new Effect(npc, target, Effect.EffectType.Melee);
-        if (npc.CurrentWeapon.Type == ItemType.MageWeapon) new Effect(npc, target, Effect.EffectType.Mage);
-        if (npc.CurrentWeapon.Type == ItemType.RangedWeapon) new Effect(npc, target, Effect.EffectType.Ranged);
-
-        if (target == null) return;
-        int damage = npc.CalculateDamage(target);
-
-        OnNpcAttack?.Invoke(npc, (target as Player)!, damage);
-        OnNpcAction?.Invoke(npc);
+        OnNpcAttack?.Invoke(npc!, (target as Player)!, damage);
+        OnNpcAction?.Invoke(npc!);
 
         Effect.TriggerScreenShake();
 
-        target.Health -= damage;
-        if (target.Health <= 0) target.Kill();
+        target!.Health -= damage;
+        if (target!.Health <= 0) target!.Kill();
     }
 
     // Implement UsePotion method

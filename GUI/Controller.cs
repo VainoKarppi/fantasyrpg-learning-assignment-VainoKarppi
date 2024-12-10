@@ -58,29 +58,38 @@ public partial class GameForm : Form {
 
         // Attack
         if (pressedKeys.Contains(Keys.Space)) {
-            pressedKeys.Clear();
-            if (Player.CurrentWeapon == null) return;
+            pressedKeys.Remove(Keys.Space);
+            if (Player.CurrentWeapon == null || Player.CurrentState == Character.State.Attacking) return;
 
             NpcCharacter? npc = World.GetNearestTarget(Player);
 
             // Create effect based on current weapon type
-            if (Player.CurrentWeapon.Type == ItemType.MeleeWeapon) {
-                new Effect(Player, npc, Effect.EffectType.Melee);
-                MultiplayerClient.SendMessageAsync(new { MessageType = NetworkMessageType.CreateEffect, Player.ID, Name = "Melee", CurrentWorldName = Player.CurrentWorld.Name });
-            }
-            if (Player.CurrentWeapon.Type == ItemType.MageWeapon) {
-                new Effect(Player, npc, Effect.EffectType.Mage);
-                MultiplayerClient.SendMessageAsync(new { MessageType = NetworkMessageType.CreateEffect, Player.ID, npc.X, npc.Y, Name = "Mage", CurrentWorldName = Player.CurrentWorld.Name });
-            }
-            if (Player.CurrentWeapon.Type == ItemType.RangedWeapon) {
-                new Effect(Player, npc, Effect.EffectType.Ranged);
-                MultiplayerClient.SendMessageAsync(new { MessageType = NetworkMessageType.CreateEffect, Player.ID, npc.X, npc.Y, Name = "Ranged", CurrentWorldName = Player.CurrentWorld.Name });
-            }
-            // Send effect update
+            var effectName = Player.CurrentWeapon.Type switch {
+                ItemType.MeleeWeapon => "Melee",
+                ItemType.MageWeapon => "Mage",
+                ItemType.RangedWeapon => "Ranged",
+                _ => throw new InvalidOperationException("Unknown weapon type")
+            };
+
+            var effectType = Player.CurrentWeapon.Type switch {
+                ItemType.MeleeWeapon => Effect.EffectType.Melee,
+                ItemType.MageWeapon => Effect.EffectType.Mage,
+                ItemType.RangedWeapon => Effect.EffectType.Ranged,
+                _ => throw new InvalidOperationException("Unknown weapon type")
+            };
+
+            MultiplayerClient.SendMessageAsync(new {
+                MessageType = NetworkMessageType.CreateEffect,
+                Player.ID,
+                TargetID = npc?.ID,
+                Name = effectName,
+                CurrentWorldName = Player.CurrentWorld.Name
+            });
+
+new Effect(Player, npc, effectType);
             
 
             if (npc != null && Player.CanAttack(npc)) Player.Actions.Attack(npc);
-            
         }
 
         

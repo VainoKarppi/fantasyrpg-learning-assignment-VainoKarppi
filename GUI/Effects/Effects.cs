@@ -11,10 +11,11 @@ public class Effect {
     public static readonly List<Effect> Effects = [];
     // Handle the attack action
     private readonly System.Threading.Timer attackTimer;
-    private Point startPoint;
+    private Point originStartPoint;
     private Point endPoint;
 
     private readonly Character Attacker;
+    private readonly Character? Target;
 
     private float Progress = 0;
     private float Radius;
@@ -32,8 +33,9 @@ public class Effect {
     private readonly EffectType Type;
 
     public Effect(Character start, Character? end, EffectType type) {
-        startPoint = start.GetCenter(); // center
+        originStartPoint = start.GetCenter(); // center
         Attacker = start;
+        
         Type = type;
         
         // In case of blood effect, we need nothing else than pos
@@ -41,6 +43,8 @@ public class Effect {
             Effects.Add(this);
             return;
         }
+
+        Target = end;
 
         if (start.CurrentState == Character.State.Attacking) return;
         start.CurrentState = Character.State.Attacking;
@@ -51,29 +55,11 @@ public class Effect {
         if (end != null) endPoint = end.GetCenter(); // center
 
         // If endPoint not defined, draw on the right side from the start
-        if (end == null && (type == EffectType.Mage || type == EffectType.Ranged)) endPoint = new Point(startPoint.X + (start.CurrentWeapon?.Range ?? 100), startPoint.Y);
+        if (end == null && (type == EffectType.Mage || type == EffectType.Ranged)) endPoint = new Point(originStartPoint.X + (start.CurrentWeapon?.Range ?? 100), originStartPoint.Y);
         
         Effects.Add(this);
     }
 
-    public Effect(Character start, Point end, EffectType type) {
-        startPoint = start.GetCenter(); // center
-        Attacker = start;
-        Type = type;
-        
-        // In case of blood effect, we need nothing else than pos
-        if (type == EffectType.Blood) {
-            Effects.Add(this);
-            return;
-        }
-        
-        attackTimer = new System.Threading.Timer(UpdateEffectProgress, null, 0, 20);
-
-
-        endPoint = end;
-
-        Effects.Add(this);
-    }
 
     private void UpdateEffectProgress(object? state) {
         if (Progress < 1.0f) {
@@ -110,9 +96,9 @@ public class Effect {
             // Convert angle to radians
             float angleInRadians = (float)(angle * Math.PI / 180);
 
-            // Calculate the current position along the circular path
-            float x = effect.startPoint.X + effect.Radius * (float)Math.Cos(angleInRadians);
-            float y = effect.startPoint.Y + effect.Radius * (float)Math.Sin(angleInRadians);
+            // Calculate the current position along the circular path (Keep attached to character)
+            float x = effect.Attacker.GetCenter().X + effect.Radius * (float)Math.Cos(angleInRadians);
+            float y = effect.Attacker.GetCenter().Y + effect.Radius * (float)Math.Sin(angleInRadians);
 
             // Draw the swoosh arc
             using Pen swooshPen = new Pen(Color.Cyan, Width); // Adjustable color and thickness
@@ -120,12 +106,12 @@ public class Effect {
             swooshPen.EndCap = LineCap.Round;
 
             // Draw a line from the swoosh center to the current position
-            g.DrawLine(swooshPen, effect.startPoint.X, effect.startPoint.Y, x, y);
+            g.DrawLine(swooshPen, effect.Attacker.GetCenter().X, effect.Attacker.GetCenter().Y, x, y);
 
             // Optionally, draw an arc segment
             RectangleF swooshBounds = new RectangleF(
-                effect.startPoint.X - effect.Radius,
-                effect.startPoint.Y - effect.Radius,
+                effect.Attacker.GetCenter().X - effect.Radius,
+                effect.Attacker.GetCenter().Y - effect.Radius,
                 effect.Radius * 2,
                 effect.Radius * 2
             );
@@ -141,15 +127,19 @@ public class Effect {
         foreach (Effect effect in Effects) {
             if (effect.Type != EffectType.Mage) continue;
 
-            // Calculate current position along the line based on progress
-            float currentX = effect.startPoint.X + (effect.endPoint.X - effect.startPoint.X) * effect.Progress;
-            float currentY = effect.startPoint.Y + (effect.endPoint.Y - effect.startPoint.Y) * effect.Progress;
+            // Check if target exists and is moving --> update end point
+            int endX = effect.Target == null ? effect.endPoint.X : effect.Target.GetCenter().X;
+            int endY = effect.Target == null ? effect.endPoint.Y : effect.Target.GetCenter().Y;
+
+            // Calculate current position along the line based on progress (Check if target is moving --> update end point)
+            float currentX = effect.originStartPoint.X + (endX - effect.originStartPoint.X) * effect.Progress;
+            float currentY = effect.originStartPoint.Y + (endY - effect.originStartPoint.Y) * effect.Progress;
 
             // Draw the glow line
-            g.DrawLine(GlowPen, effect.startPoint.X, effect.startPoint.Y, currentX, currentY);
+            g.DrawLine(GlowPen, effect.originStartPoint.X, effect.originStartPoint.Y, currentX, currentY);
 
             // Draw the main red line over the glow
-            g.DrawLine(EffectPen, effect.startPoint.X, effect.startPoint.Y, currentX, currentY);
+            g.DrawLine(EffectPen, effect.originStartPoint.X, effect.originStartPoint.Y, currentX, currentY);
         }
     }
 
@@ -157,9 +147,13 @@ public class Effect {
         foreach (Effect effect in Effects) {
             if (effect.Type != EffectType.Ranged) continue;
 
+            // Check if target exists and is moving --> update end point
+            int endX = effect.Target == null ? effect.endPoint.X : effect.Target.GetCenter().X;
+            int endY = effect.Target == null ? effect.endPoint.Y : effect.Target.GetCenter().Y;
+
             // Calculate current position along the line based on progress
-            float currentX = effect.startPoint.X + (effect.endPoint.X - effect.startPoint.X) * effect.Progress;
-            float currentY = effect.startPoint.Y + (effect.endPoint.Y - effect.startPoint.Y) * effect.Progress;
+            float currentX = effect.originStartPoint.X + (endX - effect.originStartPoint.X) * effect.Progress;
+            float currentY = effect.originStartPoint.Y + (endY - effect.originStartPoint.Y) * effect.Progress;
 
 
             // Set up the grey pen for drawing the short line effect
@@ -168,11 +162,11 @@ public class Effect {
             rangedPen.EndCap = LineCap.Round;
 
             // Length of the "bullet" (line)
-            float bulletLength = 10f;
+            float arrowLenght = 10f;
 
             // Calculate the direction the bullet is traveling in
-            float dx = effect.endPoint.X - effect.startPoint.X;
-            float dy = effect.endPoint.Y - effect.startPoint.Y;
+            float dx = endX - effect.originStartPoint.X;
+            float dy = endY - effect.originStartPoint.Y;
             float distance = (float)Math.Sqrt(dx * dx + dy * dy);  // Distance between start and end point
 
             // Normalize the direction to unit vector
@@ -180,11 +174,11 @@ public class Effect {
             dy /= distance;
 
             // Calculate the bullet's "short line" position
-            float bulletEndX = currentX + dx * bulletLength;
-            float bulletEndY = currentY + dy * bulletLength;
+            float arrowEndX = currentX + dx * arrowLenght;
+            float arrowEndY = currentY + dy * arrowLenght;
 
             // Draw the bullet as a short line
-            g.DrawLine(rangedPen, currentX, currentY, bulletEndX, bulletEndY);
+            g.DrawLine(rangedPen, currentX, currentY, arrowEndX, arrowEndY);
         }
     }
 
@@ -284,5 +278,60 @@ public class Effect {
 
         // Restore the form's original location
         GameForm.Form.Location = originalLocation;
+    }
+
+    public static void DeathEffect() {
+        if (GameForm.Form == null) return;
+
+        GameForm.Form.Invoke((MethodInvoker)(() => {
+            // Create the red overlay
+            var redOverlay = new Panel {
+                BackColor = Color.FromArgb(150, 255, 0, 0), // Semi-transparent red
+                Dock = DockStyle.Fill, // Cover the entire form
+                Enabled = false // Ensure it doesn't interfere with input
+            };
+
+            // Add the overlay to the form
+            GameForm.Form.Controls.Add(redOverlay);
+            GameForm.Form.Controls.SetChildIndex(redOverlay, 0); // Send to the back
+
+            // Create the "You Died" label
+            var deathLabel = new Label {
+                Text = "You are Dead!",
+                ForeColor = Color.Black,
+                Font = new Font("Arial", 24, FontStyle.Bold),
+                AutoSize = true,
+                BackColor = Color.Gray // Transparent to blend with overlay
+            };
+
+            // Center the label on the overlay
+            redOverlay.Controls.Add(deathLabel);
+            deathLabel.Location = new Point(
+                (redOverlay.Width - deathLabel.Width + 20) / 2,
+                (redOverlay.Height - GameForm.StatsBarHeight - deathLabel.Height) / 2
+            );
+            deathLabel.Anchor = AnchorStyles.None;
+
+            // Add the label to the form
+            GameForm.Form.Controls.Add(deathLabel);
+            GameForm.Form.Controls.SetChildIndex(deathLabel, 0); // Ensure it stays on top
+
+            // Timer to handle fading
+            var fadeTimer = new System.Windows.Forms.Timer { Interval = 70 }; // 50ms for smooth fading
+            int alpha = 150;
+
+            fadeTimer.Tick += (s, e) => {
+                alpha -= 10; // Reduce alpha gradually
+                if (alpha <= 0) {
+                    fadeTimer.Stop();
+                    redOverlay.Dispose(); // Remove overlay after fading
+                    deathLabel.Dispose();
+                } else {
+                    redOverlay.BackColor = Color.FromArgb(alpha, 255, 0, 0);
+                }
+            };
+
+            fadeTimer.Start();
+        }));
     }
 }
