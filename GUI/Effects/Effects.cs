@@ -16,6 +16,7 @@ public class Effect {
 
     private readonly Character Attacker;
     private readonly Character? Target;
+    private readonly int Range;
 
     private float Progress = 0;
     private float Radius;
@@ -32,10 +33,10 @@ public class Effect {
     }
     private readonly EffectType Type;
 
-    public Effect(Character start, Character? end, EffectType type) {
+    public Effect(Character start, Character? end, EffectType type, int? range = null) {
         originStartPoint = start.GetCenter(); // center
         Attacker = start;
-        
+        Range = range ?? start.CurrentWeapon?.Range ?? 40;
         Type = type;
         
         // In case of blood effect, we need nothing else than pos
@@ -55,7 +56,7 @@ public class Effect {
         if (end != null) endPoint = end.GetCenter(); // center
 
         // If endPoint not defined, draw on the right side from the start
-        if (end == null && (type == EffectType.Mage || type == EffectType.Ranged)) endPoint = new Point(originStartPoint.X + (start.CurrentWeapon?.Range ?? 100), originStartPoint.Y);
+        if (end == null && (type == EffectType.Mage || type == EffectType.Ranged)) endPoint = new Point(originStartPoint.X + Range, originStartPoint.Y);
         
         Effects.Add(this);
     }
@@ -88,7 +89,7 @@ public class Effect {
         foreach (Effect effect in Effects) {
             if (effect.Type != EffectType.Melee) continue;
 
-            effect.Radius = Math.Max(effect.Attacker.Width, effect.Attacker.Height) * 1.5f;
+            effect.Radius = effect.Range - effect.Attacker.Width / 2;
 
             // Calculate the current angle based on the progress (effectProgress is from 0.0 to 1.0)
             float angle = 360f * effect.Progress;

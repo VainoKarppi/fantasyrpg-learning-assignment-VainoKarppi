@@ -1,36 +1,16 @@
 using GUI;
 
-public abstract class BaseNpcActions : IActions {
-    protected NpcCharacter npc;
-
-    // Events to notify about NPC actions
+public abstract class BaseNpcActions(NpcCharacter npc) : IActions {
+    // Events
     public static event Action<NpcCharacter>? OnNpcAction;
+    public static event Action<NpcCharacter, ItemPotion>? OnNpcPotionUse;
     public static event Action<NpcCharacter, Player, int>? OnNpcAttack;
 
-    public BaseNpcActions(NpcCharacter npc) {
-        this.npc = npc;
-    }
 
     // Implement Attack method
     public virtual void Attack(Character? target) {
         if (npc == null || npc.CurrentWeapon == null || target == null) return;
 
-        if (npc!.CurrentWeapon.Type == ItemType.MeleeWeapon) {
-            new Effect(npc, target, Effect.EffectType.Melee);
-            MultiplayerClient.SendMessageAsync(new { MessageType = NetworkMessageType.CreateEffect, npc.ID, Name = "Melee", CurrentWorldName = npc.CurrentWorld.Name });
-        }
-
-
-        if (npc!.CurrentWeapon.Type == ItemType.MageWeapon) {
-            new Effect(npc, target, Effect.EffectType.Mage);
-            MultiplayerClient.SendMessageAsync(new { MessageType = NetworkMessageType.CreateEffect, npc.ID, TargetID = target?.ID, Name = "Mage", CurrentWorldName = npc.CurrentWorld.Name });
-        }
-        if (npc!.CurrentWeapon.Type == ItemType.RangedWeapon) {
-            new Effect(npc, target, Effect.EffectType.Ranged);
-            MultiplayerClient.SendMessageAsync(new { MessageType = NetworkMessageType.CreateEffect, npc.ID, TargetID = target?.ID, Name = "Range", CurrentWorldName = npc.CurrentWorld.Name });
-        }
-
-        
         int damage = npc.CalculateDamage(target!);
 
         OnNpcAttack?.Invoke(npc!, (target as Player)!, damage);
@@ -46,6 +26,7 @@ public abstract class BaseNpcActions : IActions {
     public virtual void UsePotion(ItemPotion potion) {
         npc.Health += potion.Effect;
 
+        OnNpcPotionUse?.InvokeFireAndForget(npc, potion);
         OnNpcAction?.Invoke(npc);
     }
 }

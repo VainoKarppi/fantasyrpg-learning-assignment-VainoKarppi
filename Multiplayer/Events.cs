@@ -27,8 +27,22 @@ public class NetworkEventListener {
     }
 
     private void HandleNpcAttack(NpcCharacter npc, Player player, int damage) {
-        MultiplayerClient.SendMessageAsync(new { MessageType = NetworkMessageType.CreateEffect, player.ID, Name = "Blood", CurrentWorldName = player.CurrentWorld.Name });
-        MultiplayerClient.SendMessageAsync(new { MessageType = NetworkMessageType.SendUpdateData, player.ID, player.Health, CurrentWorldName = player.CurrentWorld.Name });
+        // Create effects
+        if (npc!.CurrentWeapon!.Type == ItemType.MeleeWeapon) {
+            MultiplayerClient.SendMessageAsync(new { MessageType = NetworkMessageType.CreateEffect, npc.ID, npc.CurrentWeapon.Range, TargetID = player?.ID, Name = "Melee", CurrentWorldName = npc.CurrentWorld.Name });
+        }
+
+        if (npc!.CurrentWeapon!.Type == ItemType.MageWeapon) {
+            MultiplayerClient.SendMessageAsync(new { MessageType = NetworkMessageType.CreateEffect, npc.ID, npc.CurrentWeapon.Range, TargetID = player?.ID, Name = "Mage", CurrentWorldName = npc.CurrentWorld.Name });
+        }
+
+        if (npc!.CurrentWeapon!.Type == ItemType.RangedWeapon) {
+            MultiplayerClient.SendMessageAsync(new { MessageType = NetworkMessageType.CreateEffect, npc.ID, npc.CurrentWeapon.Range, TargetID = player?.ID, Name = "Ranged", CurrentWorldName = npc.CurrentWorld.Name });
+        }
+
+        // TODO fix blood effect (works in HandlePlayerAttack)
+        MultiplayerClient.SendMessageAsync(new { MessageType = NetworkMessageType.CreateEffect, player?.ID, Name = "Blood", CurrentWorldName = player?.CurrentWorld.Name });
+        MultiplayerClient.SendMessageAsync(new { MessageType = NetworkMessageType.SendUpdateData, player?.ID, player?.Health, CurrentWorldName = player?.CurrentWorld.Name });
     }
 
 

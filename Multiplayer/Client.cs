@@ -22,6 +22,7 @@ public enum NetworkMessageType {
 public class NetworkMessage {
     public NetworkMessageType MessageType { get; set; }
     public int? ID { get; set; }
+    public int? Range { get; set;}
     public int? Health { get; set; }
     public int? X { get; set; }
     public int? Y { get; set; }
@@ -241,18 +242,18 @@ static class MultiplayerClient {
 
                     // If player in same world, create effect
                     if (GameForm.Player.CurrentWorld!.Name.Equals(message.CurrentWorldName, StringComparison.CurrentCultureIgnoreCase)) {
-                        Character? startCharacter = GetCharacterByID(message.ID);
-                        if (startCharacter == null) return;
+                        Character? effectStartCharacter = GetCharacterByID(message.ID);
+                        if (effectStartCharacter == null) return;
 
                         // Check if found
                         Character? endCharacter = endCharacter = GetCharacterByID(message.TargetID);
 
                         _ = message.Name.ToLower() switch {
-                            "melee" => new Effect(startCharacter, null, Effect.EffectType.Melee),
-                            "mage" => new Effect(startCharacter, endCharacter, Effect.EffectType.Mage),
-                            "ranged" => new Effect(startCharacter, endCharacter, Effect.EffectType.Ranged),
-                            "blood" => new Effect(startCharacter, null, Effect.EffectType.Blood),
-                            "potion" => new Effect(startCharacter, null, Effect.EffectType.Potion),
+                            "melee" => new Effect(effectStartCharacter, null, Effect.EffectType.Melee, message.Range),
+                            "mage" => new Effect(effectStartCharacter, endCharacter, Effect.EffectType.Mage, message.Range),
+                            "ranged" => new Effect(effectStartCharacter, endCharacter, Effect.EffectType.Ranged, message.Range),
+                            "blood" => new Effect(effectStartCharacter, null, Effect.EffectType.Blood, message.Range),
+                            "potion" => new Effect(effectStartCharacter, null, Effect.EffectType.Potion, message.Range),
                             _ => throw new ArgumentException("Invalid name type"),
                         };
                     }

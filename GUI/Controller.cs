@@ -83,10 +83,11 @@ public partial class GameForm : Form {
                 Player.ID,
                 TargetID = npc?.ID,
                 Name = effectName,
+                Range = Player.CurrentWeapon?.Range ?? 40,
                 CurrentWorldName = Player.CurrentWorld.Name
             });
 
-new Effect(Player, npc, effectType);
+            new Effect(Player, npc, effectType);
             
 
             if (npc != null && Player.CanAttack(npc)) Player.Actions.Attack(npc);

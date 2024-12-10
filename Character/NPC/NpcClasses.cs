@@ -6,6 +6,8 @@ public class NpcWarrior : NpcCharacter {
         Health = 150;
         MaxHealth = 150;
         Mana = 20;
+
+        AttackTime = 300;
         
         CurrentArmor = new MetalArmor();
         CurrentWeapon = new MeleeWeapon.BasicSword();

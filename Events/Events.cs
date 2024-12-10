@@ -68,9 +68,19 @@ public class GameEventListener {
         Console.WriteLine($"Created NPC: {npc.Name} to World: {npc.CurrentWorld.Name}");
     }
     private void HandleNpcAttack(NpcCharacter npc, Character target, int damage) {
+        // Create effects
+        if (npc!.CurrentWeapon!.Type == ItemType.MeleeWeapon) new Effect(npc, target, Effect.EffectType.Melee);
+        
+
+        if (npc!.CurrentWeapon!.Type == ItemType.MageWeapon) new Effect(npc, target, Effect.EffectType.Mage);
+        
+
+        if (npc!.CurrentWeapon!.Type == ItemType.RangedWeapon) new Effect(npc, target, Effect.EffectType.Ranged);
+        
+
         Console.WriteLine($"{npc.Name} hit you! You took {damage} damage!");
 
-        new Effect(target, npc, Effect.EffectType.Blood);
+        new Effect(target!, npc, Effect.EffectType.Blood);
         GameForm.RefreshPage();
     }
     private void HandleNpcAction(NpcCharacter npc) {

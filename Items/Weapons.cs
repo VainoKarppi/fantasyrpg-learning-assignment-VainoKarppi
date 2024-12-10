@@ -4,7 +4,7 @@
 public class ItemWeapon : ItemBase {
     public double Damage { get; set; }
     public int Durability { get; set; }
-    public int Range { get; set; } = 35;
+    public int Range { get; set; } = 40;
     public int ReloadTime { get; set; } = 1000;
 
     public ItemWeapon() {
@@ -23,6 +23,8 @@ public class MeleeWeapon : ItemWeapon {
         public Fists() {
             Name = "Fist";
             Damage = 10;
+
+            Range = 35;
         }
     }
     public class BasicSword : MeleeWeapon, ISellable, IBuyable {
@@ -36,6 +38,8 @@ public class MeleeWeapon : ItemWeapon {
             SellPrice = 200;
             BuyPrice = 500;
 
+            Range = 50;
+
             Rarity = ItemRarity.Common;
         }
     }
@@ -46,7 +50,7 @@ public class MeleeWeapon : ItemWeapon {
             Name = "Legendary Sword";
             Damage = 300;
             Durability = 200;
-            Range = 45;
+            Range = 55;
 
             SellPrice = 1000;
             
