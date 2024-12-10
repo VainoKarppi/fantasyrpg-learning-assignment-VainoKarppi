@@ -54,9 +54,25 @@ public class Effect {
         if (end == null && (type == EffectType.Mage || type == EffectType.Ranged)) endPoint = new Point(startPoint.X + (start.CurrentWeapon?.Range ?? 100), startPoint.Y);
         
         Effects.Add(this);
+    }
 
-        Console.WriteLine("NEW EFFECT");
+    public Effect(Character start, Point end, EffectType type) {
+        startPoint = start.GetCenter(); // center
+        Attacker = start;
+        Type = type;
         
+        // In case of blood effect, we need nothing else than pos
+        if (type == EffectType.Blood) {
+            Effects.Add(this);
+            return;
+        }
+        
+        attackTimer = new System.Threading.Timer(UpdateEffectProgress, null, 0, 20);
+
+
+        endPoint = end;
+
+        Effects.Add(this);
     }
 
     private void UpdateEffectProgress(object? state) {

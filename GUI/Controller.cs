@@ -64,9 +64,20 @@ public partial class GameForm : Form {
             NpcCharacter? npc = World.GetNearestTarget(Player);
 
             // Create effect based on current weapon type
-            if (Player.CurrentWeapon.Type == ItemType.MeleeWeapon) new Effect(Player, npc, Effect.EffectType.Melee);
-            if (Player.CurrentWeapon.Type == ItemType.MageWeapon) new Effect(Player, npc, Effect.EffectType.Mage);
-            if (Player.CurrentWeapon.Type == ItemType.RangedWeapon) new Effect(Player, npc, Effect.EffectType.Ranged);
+            if (Player.CurrentWeapon.Type == ItemType.MeleeWeapon) {
+                new Effect(Player, npc, Effect.EffectType.Melee);
+                MultiplayerClient.SendMessageAsync(new { MessageType = NetworkMessageType.CreateEffect, Player.ID, Name = "Melee", CurrentWorldName = Player.CurrentWorld.Name });
+            }
+            if (Player.CurrentWeapon.Type == ItemType.MageWeapon) {
+                new Effect(Player, npc, Effect.EffectType.Mage);
+                MultiplayerClient.SendMessageAsync(new { MessageType = NetworkMessageType.CreateEffect, Player.ID, npc.X, npc.Y, Name = "Mage", CurrentWorldName = Player.CurrentWorld.Name });
+            }
+            if (Player.CurrentWeapon.Type == ItemType.RangedWeapon) {
+                new Effect(Player, npc, Effect.EffectType.Ranged);
+                MultiplayerClient.SendMessageAsync(new { MessageType = NetworkMessageType.CreateEffect, Player.ID, npc.X, npc.Y, Name = "Ranged", CurrentWorldName = Player.CurrentWorld.Name });
+            }
+            // Send effect update
+            
 
             if (npc != null && Player.CanAttack(npc)) Player.Actions.Attack(npc);
             
@@ -125,6 +136,8 @@ public partial class GameForm : Form {
     }
 
     // Ensure the player does not move outside world boundaries
+    private static int lastX = 0;
+    private static int lastY = 0;
     private static void CheckPlayerWorldBounds() {
 
         // Move player From Left to Right World
@@ -151,7 +164,12 @@ public partial class GameForm : Form {
         Player.Y = Math.Clamp(Player.Y, TopBarHeight, WorldHeight - Player.Height); // Add some extra at the bottom, for stats display
 
         // Send update location
-        MultiplayerClient.SendMessageAsync(new { MessageType = NetworkMessageType.SendUpdateData, Player.ID, Player.X, Player.Y, CurrentWorldName = Player.CurrentWorld!.Name });
+        if (Player.X != lastX || Player.Y != lastY) {
+            MultiplayerClient.SendMessageAsync(new { MessageType = NetworkMessageType.SendUpdateData, Player.ID, Player.X, Player.Y, CurrentWorldName = Player.CurrentWorld!.Name });
+            lastX = Player.X;
+            lastY = Player.Y;
+        }
+        
     }
 
     // Check if player collides with any NPCs

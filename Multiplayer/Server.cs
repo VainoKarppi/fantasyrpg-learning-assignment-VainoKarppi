@@ -119,20 +119,20 @@ class MultiplayerServer {
 
                 string receivedMessage = Encoding.UTF8.GetString(messageBuffer);
                 
-                NetworkMessage? unit = JsonSerializer.Deserialize<NetworkMessage>(receivedMessage);
-                if (unit == null) continue;
+                NetworkMessage? message = JsonSerializer.Deserialize<NetworkMessage>(receivedMessage);
+                if (message == null) continue;
 
-                NetworkMessageType? method = unit.MessageType;
+                NetworkMessageType? method = message.MessageType;
                 if (method == null) continue;
 
                 //--- ACCEPT CONNECTION TO SERVER
                 if (method == NetworkMessageType.Connect) {
-                    unit.ID = GetID();
+                    message.ID = GetID();
                     
-                    Console.WriteLine($"SERVER: Player: {unit.Name} Connected to server! ID: {unit.ID}");
+                    Console.WriteLine($"SERVER: Player: {message.Name} Connected to server! ID: {message.ID}");
 
                     // Send client id back to connected client
-                    SendMessageAsync(thisClient, new { MessageType = NetworkMessageType.Connect, unit.ID });
+                    SendMessageAsync(thisClient, new { MessageType = NetworkMessageType.Connect, message.ID });
                     
                     // Send sync data of other players
                     foreach (KeyValuePair<TcpClient, NetworkMessage> client in Clients) {
@@ -140,9 +140,9 @@ class MultiplayerServer {
                     }
 
 
-                    Clients.Add(thisClient, unit);
+                    Clients.Add(thisClient, message);
 
-                    OnClientConnect?.InvokeFireAndForget(thisClient, unit);
+                    OnClientConnect?.InvokeFireAndForget(thisClient, message);
 
                     // Send NPC sync data
                     if (HostClient != thisClient) {
@@ -157,15 +157,15 @@ class MultiplayerServer {
 
                 //--- RECEIVE PLAYER DATA UPDATED
                 if (method == NetworkMessageType.SendUpdateData) {
-                    NetworkMessage? player = Clients.SingleOrDefault(x => x.Value.ID == unit.ID).Value;
+                    NetworkMessage? player = Clients.SingleOrDefault(x => x.Value.ID == message.ID).Value;
                     if (player is null) continue;
 
-                    unit.MessageType = NetworkMessageType.ReceiveUpdateData;
+                    message.MessageType = NetworkMessageType.ReceiveUpdateData;
 
-                    if (unit.Name != null) player.Name = unit.Name;
-                    if (unit.X.HasValue) player.X = unit.X;
-                    if (unit.Y.HasValue) player.Y = unit.Y;
-                    if (unit.CurrentWorldName != null) player.CurrentWorldName = unit.CurrentWorldName;
+                    if (message.Name != null) player.Name = message.Name;
+                    if (message.X.HasValue) player.X = message.X;
+                    if (message.Y.HasValue) player.Y = message.Y;
+                    if (message.CurrentWorldName != null) player.CurrentWorldName = message.CurrentWorldName;
 
                     
                     foreach (KeyValuePair<TcpClient, NetworkMessage> client in Clients) {
@@ -174,7 +174,16 @@ class MultiplayerServer {
                         // TODO Only sync data if in same world
                         //if (playerData.Key.CurrentWorldName?.ToLower() != player.CurrentWorldName?.ToLower()) continue;
 
-                        SendMessageAsync(client.Key, unit);
+                        SendMessageAsync(client.Key, message);
+                    }
+                }
+
+                //--- RECEIVE AND FORWARD CREATE EFFECT
+                if (method == NetworkMessageType.CreateEffect) {
+                    foreach (KeyValuePair<TcpClient, NetworkMessage> client in Clients) {
+                        if (client.Key == thisClient) continue; // Dont send data back to sender
+
+                        SendMessageAsync(client.Key, message);
                     }
                 }
 
@@ -182,21 +191,21 @@ class MultiplayerServer {
                 if (method == NetworkMessageType.SendUpdateDataNpc) {
                     NpcCharacter? npc = null;
                     foreach (World world in GameInstance.Worlds) {
-                        npc = world.NPCs.SingleOrDefault(n => n.ID == unit.ID);
+                        npc = world.NPCs.SingleOrDefault(n => n.ID == message.ID);
                         if (npc != null) break;
                     }
                     if (npc is null) continue;
 
-                    unit.MessageType = NetworkMessageType.ReceiveUpdateDataNpc;
-                    if (unit.X.HasValue) npc.X = (int)unit.X;
-                    if (unit.Y.HasValue) npc.X = (int)unit.Y;
-                    if (unit.Health.HasValue) npc.Health = (int)unit.Health;
-                    if (unit.CurrentWorldName != null) npc.CurrentWorld = GameInstance.GetWorld(unit.CurrentWorldName);
+                    message.MessageType = NetworkMessageType.ReceiveUpdateDataNpc;
+                    if (message.X.HasValue) npc.X = (int)message.X;
+                    if (message.Y.HasValue) npc.X = (int)message.Y;
+                    if (message.Health.HasValue) npc.Health = (int)message.Health;
+                    if (message.CurrentWorldName != null) npc.CurrentWorld = GameInstance.GetWorld(message.CurrentWorldName);
 
                     foreach (KeyValuePair<TcpClient, NetworkMessage> client in Clients) {
                         if (client.Key == thisClient) continue; // Dont send data back to sender
 
-                        SendMessageAsync(client.Key, unit);
+                        SendMessageAsync(client.Key, message);
                     }
                 }
 

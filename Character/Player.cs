@@ -38,6 +38,7 @@ public class Player : Character, IWorldChanger {
         // TODO what else to add to statistics ???
     }
     
+    public Player() {}
 
     public Player(World startWorld, string playerName = "Player") {
         

@@ -33,7 +33,7 @@ public abstract class Character : ICharacter {
     public int Mana { get; set; } = 100;
 
     public int X { get; set; } = GameForm.ScreenWidth / 2;
-    public int Y { get; set; } = (GameForm.ScreenHeight - GUI.GameForm.StatsBarHeight) / 2;
+    public int Y { get; set; } = (GameForm.ScreenHeight - GameForm.StatsBarHeight) / 2;
     public int Width { get; set; } = 20;
     public int Height { get; set; } = 20;
 

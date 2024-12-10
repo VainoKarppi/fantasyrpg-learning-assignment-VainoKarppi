@@ -14,7 +14,7 @@ public enum NetworkMessageType {
     ReceiveUpdateDataNpc,
     SendUpdateDataNpc,
     CreateNpc,
-    
+    CreateEffect
 }
 
 
@@ -27,9 +27,31 @@ public class NetworkMessage {
     public int? Y { get; set; }
     public string? Name { get; set; }
     public string? CurrentWorldName { get; set; }
+    public Effect.EffectType EffectType { get; set; }
+    public dynamic? ExtraData { get; set; }
 }
 
 static class MultiplayerClient {
+    public static Character? GetCharacterByID(int? id) {
+        // TODO also return player
+        NetworkMessage? foundCharcater = OtherPlayers.FirstOrDefault(p => p.ID == id);
+        if (foundCharcater != null) {
+            Character character = new Player();
+            character.X = (int)foundCharcater.X!;
+            character.Y = (int)foundCharcater.Y!;
+
+            return character;
+        }
+
+
+        foreach (World world in GameInstance.Worlds) {
+            foreach (NpcCharacter npc in world.NPCs) {
+                if (npc.ID == id) return npc;
+            }
+        }
+
+        return null;
+    }
     //--- EVENTS
     private static NetworkEventListener? EventListeners;
     public static event Action<TcpClient, Player>? OnConnectStart;
@@ -127,16 +149,16 @@ static class MultiplayerClient {
                 string receivedMessage = Encoding.UTF8.GetString(messageBuffer);
                 Console.WriteLine($"CLIENT: {receivedMessage}");
 
-                NetworkMessage? unit = JsonSerializer.Deserialize<NetworkMessage>(receivedMessage);
-                if (unit == null) continue;
+                NetworkMessage? message = JsonSerializer.Deserialize<NetworkMessage>(receivedMessage);
+                if (message == null) continue;
 
-                NetworkMessageType? method = unit.MessageType;
+                NetworkMessageType? method = message.MessageType;
                 if (method == null) continue;
 
                 //--- ACCEPT SERVER CONNECTION ID
                 if (method == NetworkMessageType.Connect) {
-                    if (unit.ID == null) continue;
-                    GameForm.Player.ID = (int)unit.ID;
+                    if (message.ID == null) continue;
+                    GameForm.Player.ID = (int)message.ID;
 
                     OnConnectEnd?.InvokeFireAndForget(Client!, GameForm.Player, null);
                     continue;
@@ -144,9 +166,9 @@ static class MultiplayerClient {
 
                 //--- CLIENT DISCONNECT
                 if (method == NetworkMessageType.Disconnect) {
-                    if (unit.ID == null) continue;
+                    if (message.ID == null) continue;
 
-                    OtherPlayers.RemoveAll(p => p.ID == unit.ID); // Remove other player from list
+                    OtherPlayers.RemoveAll(p => p.ID == message.ID); // Remove other player from list
 
                     GameForm.RefreshPage();
                     continue;
@@ -155,19 +177,19 @@ static class MultiplayerClient {
 
                 //--- UPDATE OTHER PLAYER
                 if (method == NetworkMessageType.ReceiveUpdateData) {
-                    if (unit.ID == null) continue;
+                    if (message.ID == null) continue;
                     
                     // Add to list if not found
-                    if (OtherPlayers.FindIndex(p => p.ID == unit.ID) == -1) OtherPlayers.Add(unit);
+                    if (OtherPlayers.FindIndex(p => p.ID == message.ID) == -1) OtherPlayers.Add(message);
 
-                    NetworkMessage? playerToUpdate = OtherPlayers.FirstOrDefault(x => x.ID == unit.ID);
+                    NetworkMessage? playerToUpdate = OtherPlayers.FirstOrDefault(x => x.ID == message.ID);
                     if (playerToUpdate == null) continue;
 
-                    if (unit.Name != null) playerToUpdate.Name = unit.Name;
-                    if (unit.CurrentWorldName != null) playerToUpdate.CurrentWorldName = unit.CurrentWorldName;
-                    if (unit.X.HasValue) playerToUpdate.X = unit.X;
-                    if (unit.Y.HasValue) playerToUpdate.Y = unit.Y;
-                    if (unit.Health.HasValue) playerToUpdate.Health = unit.Health;
+                    if (message.Name != null) playerToUpdate.Name = message.Name;
+                    if (message.CurrentWorldName != null) playerToUpdate.CurrentWorldName = message.CurrentWorldName;
+                    if (message.X.HasValue) playerToUpdate.X = message.X;
+                    if (message.Y.HasValue) playerToUpdate.Y = message.Y;
+                    if (message.Health.HasValue) playerToUpdate.Health = message.Health;
 
                     GameForm.RefreshPage();
                     continue;
@@ -177,16 +199,16 @@ static class MultiplayerClient {
                 if (method == NetworkMessageType.ReceiveUpdateDataNpc) {
                     foreach (World world in GameInstance.Worlds) {
                         // Find the NPC by ID within the world's NPCs
-                        var npc = world.NPCs.FirstOrDefault(n => n.ID == unit.ID);
+                        var npc = world.NPCs.FirstOrDefault(n => n.ID == message.ID);
                         if (npc is null) continue;
 
-                        if (unit.Health.HasValue) npc.Health = unit.Health.Value;
-                        if (unit.X.HasValue) npc.X = unit.X.Value;
-                        if (unit.Y.HasValue) npc.Y = unit.Y.Value;
-                        if (unit.CurrentWorldName != null) npc.CurrentWorld = GameInstance.GetWorld(unit.CurrentWorldName);
+                        if (message.Health.HasValue) npc.Health = message.Health.Value;
+                        if (message.X.HasValue) npc.X = message.X.Value;
+                        if (message.Y.HasValue) npc.Y = message.Y.Value;
+                        if (message.CurrentWorldName != null) npc.CurrentWorld = GameInstance.GetWorld(message.CurrentWorldName);
 
                         // If player in same world, update screen
-                        if (GameForm.Player.CurrentWorld!.Name.Equals(unit.CurrentWorldName, StringComparison.CurrentCultureIgnoreCase)) {
+                        if (GameForm.Player.CurrentWorld!.Name.Equals(message.CurrentWorldName, StringComparison.CurrentCultureIgnoreCase)) {
                             if (npc.Health < 0) npc.Kill();
                             GameForm.RefreshPage();
                         }
@@ -199,15 +221,43 @@ static class MultiplayerClient {
 
                 //--- CREATE NPC
                 if (method == NetworkMessageType.CreateNpc) {
-                    if (unit.CurrentWorldName is null || unit.Name is null || unit.X is null || unit.Y is null || unit.ID is null) continue;
+                    if (message.CurrentWorldName is null || message.Name is null || message.X is null || message.Y is null || message.ID is null) continue;
 
-                    World spawnWorld = GameInstance.GetWorld(unit.CurrentWorldName);
-                    NpcCharacter createdNpc = NpcCharacter.CreateNPC(unit.Name, spawnWorld, ((int)unit.X, (int)unit.Y), unit.Health);
-                    createdNpc.ID = (int)unit.ID;
+                    World spawnWorld = GameInstance.GetWorld(message.CurrentWorldName);
+                    NpcCharacter createdNpc = NpcCharacter.CreateNPC(message.Name, spawnWorld, ((int)message.X, (int)message.Y), message.Health);
+                    createdNpc.ID = (int)message.ID;
 
                     // If player in same world, update screen
-                    if (GameForm.Player.CurrentWorld!.Name.Equals(unit.CurrentWorldName, StringComparison.CurrentCultureIgnoreCase)) {
+                    if (GameForm.Player.CurrentWorld!.Name.Equals(message.CurrentWorldName, StringComparison.CurrentCultureIgnoreCase)) {
                         GameForm.RefreshPage();
+                    }
+                }
+
+                //--- CREATE EFFECT
+                if (method == NetworkMessageType.CreateEffect) {
+                    if (message.CurrentWorldName is null || message.Name is null || message.ID is null) continue;
+
+                    
+
+
+                    // If player in same world, create effect
+                    if (GameForm.Player.CurrentWorld!.Name.Equals(message.CurrentWorldName, StringComparison.CurrentCultureIgnoreCase)) {
+                        Character? startCharacter = GetCharacterByID(message.ID);
+                        if (startCharacter == null) return;
+
+                        if (startCharacter is Player && message.ExtraData != null) {
+                            startCharacter.X = (int)message.ExtraData!.X;
+                            startCharacter.Y = (int)message.ExtraData!.Y;
+                        }
+
+                        _ = message.Name.ToLower() switch {
+                            "melee" => new Effect(startCharacter, null, Effect.EffectType.Melee),
+                            "mage" => new Effect(startCharacter, new Point((int)message.X!, (int)message.Y!), Effect.EffectType.Mage),
+                            "ranged" => new Effect(startCharacter, new Point((int)message.X!, (int)message.Y!), Effect.EffectType.Ranged),
+                            "blood" => new Effect(startCharacter, null, Effect.EffectType.Blood),
+                            "potion" => new Effect(startCharacter, null, Effect.EffectType.Potion),
+                            _ => throw new ArgumentException("Invalid name type"),
+                        };
                     }
                 }
 
