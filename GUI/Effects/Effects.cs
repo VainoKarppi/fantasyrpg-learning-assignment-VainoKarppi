@@ -86,7 +86,8 @@ public class Effect {
 
     }
     private static void DrawSwordEffects(Graphics g) {
-        foreach (Effect effect in Effects) {
+        var effectsCopy = new List<Effect>(Effects);
+        foreach (Effect effect in effectsCopy) {
             if (effect.Type != EffectType.Melee) continue;
 
             effect.Radius = effect.Range - effect.Attacker.Width / 2;
@@ -125,7 +126,8 @@ public class Effect {
     private static readonly Pen EffectPen = new Pen(Color.Red, 6) { StartCap = LineCap.Round, EndCap = LineCap.Round };
 
     private static void DrawMageEffects(Graphics g) {
-        foreach (Effect effect in Effects) {
+        var effectsCopy = new List<Effect>(Effects);
+        foreach (Effect effect in effectsCopy) {
             if (effect.Type != EffectType.Mage) continue;
 
             // Check if target exists and is moving --> update end point
@@ -145,7 +147,8 @@ public class Effect {
     }
 
     private static void DrawRangedEffects(Graphics g) {
-        foreach (Effect effect in Effects) {
+        var effectsCopy = new List<Effect>(Effects);
+        foreach (Effect effect in effectsCopy) {
             if (effect.Type != EffectType.Ranged) continue;
 
             // Check if target exists and is moving --> update end point
@@ -192,7 +195,8 @@ public class Effect {
         if (GameForm.Form == null) return;
 
         int i = 0;
-        foreach (Effect effect in Effects) {
+        var effectsCopy = new List<Effect>(Effects);
+        foreach (Effect effect in effectsCopy) {
             if (effect.Type != EffectType.Blood) continue;
             
             Effects.Remove(effect);
