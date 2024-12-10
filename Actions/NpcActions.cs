@@ -19,7 +19,7 @@ public abstract class BaseNpcActions : IActions {
 
         if (npc.CurrentWeapon.Type == ItemType.MeleeWeapon) new Effect(npc, target, Effect.EffectType.Melee);
         if (npc.CurrentWeapon.Type == ItemType.MageWeapon) new Effect(npc, target, Effect.EffectType.Mage);
-        if (npc.CurrentWeapon.Type == ItemType.RangedArmor) new Effect(npc, target, Effect.EffectType.Ranged);
+        if (npc.CurrentWeapon.Type == ItemType.RangedWeapon) new Effect(npc, target, Effect.EffectType.Ranged);
 
         if (target == null) return;
         int damage = npc.CalculateDamage(target);

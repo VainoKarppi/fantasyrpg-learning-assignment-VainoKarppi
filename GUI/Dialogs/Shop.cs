@@ -34,7 +34,9 @@ public partial class GameForm : Form {
             Left = 30
         };
         buyButton.Click += (sender, e) => {
+            shopMenuForm.Hide();
             OpenShopBuy(shopMenuForm);
+            shopMenuForm.Show();
         };
         shopMenuForm.Controls.Add(buyButton);
 
@@ -47,7 +49,9 @@ public partial class GameForm : Form {
             Left = 140
         };
         sellButton.Click += (sender, e) => {
-            OpenShopSell(shopMenuForm); // Open Sell interface
+            shopMenuForm.Hide();
+            OpenShopSell(shopMenuForm);
+            shopMenuForm.Show();
         };
         shopMenuForm.Controls.Add(sellButton);
 

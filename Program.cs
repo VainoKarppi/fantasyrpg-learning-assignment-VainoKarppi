@@ -57,6 +57,9 @@ public class Program {
         Shop shop = new Shop();
 
         Player player = new Player(homeWorld, "Player");
+        player.Money = 1500;
+        player.AddItem(new ItemDrop.Gems.Sapphire());
+
 
         Application.EnableVisualStyles();
         Application.SetCompatibleTextRenderingDefault(false); 

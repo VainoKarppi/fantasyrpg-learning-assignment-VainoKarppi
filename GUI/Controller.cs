@@ -66,7 +66,7 @@ public partial class GameForm : Form {
             // Create effect based on current weapon type
             if (Player.CurrentWeapon.Type == ItemType.MeleeWeapon) new Effect(Player, npc, Effect.EffectType.Melee);
             if (Player.CurrentWeapon.Type == ItemType.MageWeapon) new Effect(Player, npc, Effect.EffectType.Mage);
-            if (Player.CurrentWeapon.Type == ItemType.RangedArmor) new Effect(Player, npc, Effect.EffectType.Ranged);
+            if (Player.CurrentWeapon.Type == ItemType.RangedWeapon) new Effect(Player, npc, Effect.EffectType.Ranged);
 
             if (npc != null && Player.CanAttack(npc)) Player.Actions.Attack(npc);
             

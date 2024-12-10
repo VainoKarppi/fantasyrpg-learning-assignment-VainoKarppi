@@ -95,16 +95,17 @@ public partial class GameForm : Form {
     }
 
     private void OpenItemChangeForm<T>(string formTitle, List<T> items, Action<T> onItemSelected, string itemType = "this type of items", string selectText = "Equip") where T : class {
-        Form changeForm = CreateChangeForm(formTitle, items, itemType);
+        Form? changeForm = null;
 
         try {
+            changeForm = CreateChangeForm(formTitle, items, itemType);
             FlowLayoutPanel itemPanel = CreateItemPanel(items, onItemSelected, selectText);
             changeForm.Controls.Add(itemPanel);
 
             changeForm.ShowDialog();
         } catch (Exception ex) {
             MessageBox.Show(ex.Message);
-            changeForm.Close();
+            changeForm?.Close();
         }
     }
 

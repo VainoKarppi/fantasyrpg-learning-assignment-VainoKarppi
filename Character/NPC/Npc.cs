@@ -2,7 +2,7 @@
 // Base Character Class
 public partial class NpcCharacter : Character, IWorldChanger {
 
-    public int AttackTime { get; set; } = 5;
+    public int AttackTime { get; set; } = 1500; // Milliseconds after player hit the NPC
 
 
 

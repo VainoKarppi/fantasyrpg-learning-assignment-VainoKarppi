@@ -28,14 +28,11 @@ public partial class GameForm : Form {
     public const int WorldHeight = ScreenHeight - StatsBarHeight - TopBarHeight;
     
     public GameForm(Player player, Shop? shop = null) {
-
         // Initialize the player
         Player = player ?? throw new ArgumentNullException(nameof(player));
-        string username = PromptForUsername();
-        Player.Name = username;
-        Player.Money = 800;
-        Player.AddItem(new ItemDrop.Gems.Sapphire());
-
+        
+        player.Name = PromptForUsername();
+        
         // Initialize Shop
         Shop = shop ?? Shop;
 

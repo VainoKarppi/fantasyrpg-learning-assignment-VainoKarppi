@@ -32,7 +32,7 @@ public class NetworkEventListener {
 
 
 
-    private void HandlePlayerAttack(Player player, NpcCharacter npc, int damage) {
+    private void HandlePlayerAttack(Player player, Character npc, int damage) {
         MultiplayerClient.SendMessageAsync(new { MessageType = NetworkMessageType.SendUpdateDataNpc, npc.ID, npc.Health, CurrentWorldName = npc.CurrentWorld.Name });
     }
 }

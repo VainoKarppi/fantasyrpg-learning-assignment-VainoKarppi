@@ -86,7 +86,7 @@ public partial class GameForm : Form {
                 // Start over
                 GameInstance.RemoveAllNpcs();
                 Player.ChangeWorld("Home");
-                Player.X = ScreenWidth / 2;;
+                Player.X = ScreenWidth / 2;
                 Player.Y = (ScreenHeight - StatsBarHeight) / 2;
             } catch (Exception ex) {
                 if (ex is SocketException) {
@@ -125,7 +125,7 @@ public partial class GameForm : Form {
         hostButton.Click += (sender, e) => {
             // Start over
             Player!.ChangeWorld("Home");
-            Player.X = ScreenWidth / 2;;
+            Player.X = ScreenWidth / 2;
             Player.Y = (ScreenHeight - StatsBarHeight) / 2;
 
             new Thread(() => MultiplayerServer.Start("0.0.0.0", 7842)).Start(); // Start in new thread

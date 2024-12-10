@@ -32,8 +32,8 @@ public abstract class Character : ICharacter {
     public int MaxHealth { get; set; } = 100;
     public int Mana { get; set; } = 100;
 
-    public int X { get; set; } = GUI.GameForm.ScreenWidth / 2;
-    public int Y { get; set; } = (GUI.GameForm.ScreenHeight - GUI.GameForm.StatsBarHeight) / 2;
+    public int X { get; set; } = GameForm.ScreenWidth / 2;
+    public int Y { get; set; } = (GameForm.ScreenHeight - GUI.GameForm.StatsBarHeight) / 2;
     public int Width { get; set; } = 20;
     public int Height { get; set; } = 20;
 
@@ -50,6 +50,10 @@ public abstract class Character : ICharacter {
         Attacking,
         Moving,
         Waiting
+    }
+
+    public virtual Point GetCenter() {
+        return new Point(X + Width/2, Y + Height/2);
     }
 
     public virtual bool CanAttack(Character target) {

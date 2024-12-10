@@ -30,7 +30,7 @@ public class MeleeWeapon : ItemWeapon {
         public int? BuyPrice { get; set; }
         public BasicSword() {
             Name = "Basic Sword";
-            Damage = 100;
+            Damage = 90;
             Durability = 80;
 
             SellPrice = 200;
@@ -73,7 +73,7 @@ public class RangedWeapon : ItemWeapon {
             Damage = 30;
             Durability = 40;
 
-            Range = 150;
+            Range = 190;
 
             BuyPrice = 200;
             SellPrice = 100;
@@ -86,7 +86,7 @@ public class RangedWeapon : ItemWeapon {
             Name = "Legendary Bow";
             Damage = 300;
             Durability = 80;
-            Range = 190;
+            Range = 250;
 
             SellPrice = 1200;
         }

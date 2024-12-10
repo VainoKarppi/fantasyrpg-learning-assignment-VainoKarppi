@@ -1,6 +1,8 @@
 
 
 using System.Drawing.Drawing2D;
+using System.Net;
+using System.Text.Json;
 
 namespace GUI;
 
@@ -8,13 +10,13 @@ namespace GUI;
 public class Effect {
     public static readonly List<Effect> Effects = [];
     // Handle the attack action
-    private readonly System.Windows.Forms.Timer attackTimer;
-    private PointF startPoint;
-    private PointF endPoint;
+    private readonly System.Threading.Timer attackTimer;
+    private Point startPoint;
+    private Point endPoint;
 
     private readonly Character Attacker;
 
-    private float Progress;
+    private float Progress = 0;
     private float Radius;
 
     private const float effectSpeed = 0.1f; // Adjust the speed of the swoosh
@@ -30,7 +32,7 @@ public class Effect {
     private readonly EffectType Type;
 
     public Effect(Character start, Character? end, EffectType type) {
-        startPoint = new PointF(start.X + start.Width / 2, start.Y + start.Height / 2); // center
+        startPoint = start.GetCenter(); // center
         Attacker = start;
         Type = type;
         
@@ -43,20 +45,33 @@ public class Effect {
         if (start.CurrentState == Character.State.Attacking) return;
         start.CurrentState = Character.State.Attacking;
         
+        attackTimer = new System.Threading.Timer(UpdateEffectProgress, null, 0, 20);
 
-        attackTimer = new System.Windows.Forms.Timer();
-        attackTimer.Interval = 20; // 20 ms for smooth animation
-        attackTimer.Tick += AttackTimer_Tick;
 
-        
+        if (end != null) endPoint = end.GetCenter(); // center
 
-        if (end != null) endPoint = new PointF(end.X + start.Width / 2, end.Y + end.Height / 2); // center
+        // If endPoint not defined, draw on the right side from the start
+        if (end == null && (type == EffectType.Mage || type == EffectType.Ranged)) endPoint = new Point(startPoint.X + (start.CurrentWeapon?.Range ?? 100), startPoint.Y);
         
         Effects.Add(this);
 
-        Progress = 0; // Reset the swoosh progress
-        attackTimer.Start(); // Start the animation timer
+        Console.WriteLine("NEW EFFECT");
         
+    }
+
+    private void UpdateEffectProgress(object? state) {
+        if (Progress < 1.0f) {
+            Progress += effectSpeed;
+            GameForm.RefreshPage();
+        } else {
+            attackTimer.Dispose();
+            Effects.Remove(this);
+            GameForm.RefreshPage();
+
+            // Reset character state after effect completion
+            if (Attacker.CurrentWeapon != null) Task.Delay(Attacker.CurrentWeapon.ReloadTime).Wait();
+            Attacker.CurrentState = Character.State.Idle;
+        }
     }
 
     internal static void DrawEffects(Graphics g) {
@@ -103,78 +118,61 @@ public class Effect {
         }
     }
 
+    private static readonly Pen GlowPen = new Pen(Color.DarkCyan, 10) { StartCap = LineCap.Round, EndCap = LineCap.Round };
+    private static readonly Pen EffectPen = new Pen(Color.Red, 6) { StartCap = LineCap.Round, EndCap = LineCap.Round };
+
     private static void DrawMageEffects(Graphics g) {
         foreach (Effect effect in Effects) {
-            if (effect.Type != EffectType.Mage) continue;  
-
-            using Pen glowPen = new Pen(Color.DarkCyan, 10); // White glow, thicker line
-            using Pen effectPen = new Pen(Color.Red, 6);  // Red effect line
-
-            glowPen.StartCap = LineCap.Round;
-            glowPen.EndCap = LineCap.Round;
-            effectPen.StartCap = LineCap.Round;
-            effectPen.EndCap = LineCap.Round;
+            if (effect.Type != EffectType.Mage) continue;
 
             // Calculate current position along the line based on progress
             float currentX = effect.startPoint.X + (effect.endPoint.X - effect.startPoint.X) * effect.Progress;
             float currentY = effect.startPoint.Y + (effect.endPoint.Y - effect.startPoint.Y) * effect.Progress;
 
             // Draw the glow line
-            g.DrawLine(glowPen, effect.startPoint.X, effect.startPoint.Y, currentX, currentY);
+            g.DrawLine(GlowPen, effect.startPoint.X, effect.startPoint.Y, currentX, currentY);
 
             // Draw the main red line over the glow
-            g.DrawLine(effectPen, effect.startPoint.X, effect.startPoint.Y, currentX, currentY);
+            g.DrawLine(EffectPen, effect.startPoint.X, effect.startPoint.Y, currentX, currentY);
         }
     }
 
     private static void DrawRangedEffects(Graphics g) {
         foreach (Effect effect in Effects) {
-            if (effect.Type != EffectType.Ranged) continue;   
-            
-            // Calculate the current angle based on the progress (effectProgress is from 0.0 to 1.0)
-            float angle = 360f * effect.Progress;
+            if (effect.Type != EffectType.Ranged) continue;
 
-            // Convert angle to radians
-            float angleInRadians = (float)(angle * Math.PI / 180);
-
-            // Calculate the current position along the circular path
-            float x = effect.startPoint.X + effect.Radius * (float)Math.Cos(angleInRadians);
-            float y = effect.startPoint.Y + effect.Radius * (float)Math.Sin(angleInRadians);
+            // Calculate current position along the line based on progress
+            float currentX = effect.startPoint.X + (effect.endPoint.X - effect.startPoint.X) * effect.Progress;
+            float currentY = effect.startPoint.Y + (effect.endPoint.Y - effect.startPoint.Y) * effect.Progress;
 
 
-            using Pen swooshPen = new Pen(Color.Red, 6);
-            swooshPen.StartCap = LineCap.Round;
-            swooshPen.EndCap = LineCap.Round;
+            // Set up the grey pen for drawing the short line effect
+            using Pen rangedPen = new Pen(Color.Gray, 5);  // Grey color, 5px thickness
+            rangedPen.StartCap = LineCap.Round;
+            rangedPen.EndCap = LineCap.Round;
 
-            // Draw a line from the swoosh center to the current position
-            g.DrawLine(swooshPen, effect.startPoint.X, effect.startPoint.Y, x, y);
+            // Length of the "bullet" (line)
+            float bulletLength = 10f;
 
-            // Optionally, draw an arc segment
-            RectangleF swooshBounds = new RectangleF(
-                effect.startPoint.X - effect.Radius,
-                effect.startPoint.Y - effect.Radius,
-                effect.Radius * 2,
-                effect.Radius * 2
-            );
+            // Calculate the direction the bullet is traveling in
+            float dx = effect.endPoint.X - effect.startPoint.X;
+            float dy = effect.endPoint.Y - effect.startPoint.Y;
+            float distance = (float)Math.Sqrt(dx * dx + dy * dy);  // Distance between start and end point
 
-            g.DrawArc(swooshPen, swooshBounds, angle - 45, 45); // Adjust angles for the arc
+            // Normalize the direction to unit vector
+            dx /= distance;
+            dy /= distance;
+
+            // Calculate the bullet's "short line" position
+            float bulletEndX = currentX + dx * bulletLength;
+            float bulletEndY = currentY + dy * bulletLength;
+
+            // Draw the bullet as a short line
+            g.DrawLine(rangedPen, currentX, currentY, bulletEndX, bulletEndY);
         }
     }
 
-    private async void AttackTimer_Tick(object? sender, EventArgs e) {
-        if (Progress < 1.0f) {
-            Progress += effectSpeed; // Increase the progress of the swoosh
-            GameForm.RefreshPage();
-        } else {
-            attackTimer.Stop(); // Stop the animation when it finishes
-            Effects.Remove(this);
-            GameForm.RefreshPage();
-
-            if (Attacker.CurrentWeapon != null) await Task.Delay(Attacker.CurrentWeapon.ReloadTime);
-            Attacker.CurrentState = Character.State.Idle;
-        }
-        
-    }
+    
 
 
     
@@ -198,7 +196,7 @@ public class Effect {
             PictureBox bloodSplash = new PictureBox {
                 Width = splashSize,
                 Height = splashSize,
-                Location = new Point((int)effect.startPoint.X - splashSize / 2, (int)effect.startPoint.Y - splashSize / 2), // Center it on the character
+                Location = new Point(effect.Attacker.GetCenter().X - splashSize / 2, effect.Attacker.GetCenter().Y - splashSize / 2), // Center it on the character
                 BackColor = Color.Transparent
             };
 
@@ -219,6 +217,8 @@ public class Effect {
             await Task.Run(async () => {
                 for (int alpha = splashAlpha; alpha >= 0; alpha -= 10) {
                     if (originWorld != GameForm.Player.CurrentWorld) break; // Stop drawing if dead/reset
+
+                    bloodSplash.Location = new Point(effect.Attacker.GetCenter().X - splashSize / 2, effect.Attacker.GetCenter().Y - splashSize / 2); // Center it on the character
                     
                     using (Graphics g = Graphics.FromImage(splashBitmap)) {
                         g.Clear(Color.Transparent); // Clear the previous drawing

@@ -1,4 +1,6 @@
 
+using GUI;
+
 public class GameInstance {
 
     private static GameInstance? _instance;
@@ -18,20 +20,22 @@ public class GameInstance {
 
         _instance = this;
 
-        PlayerActions.OnPlayerAction += HandlePlayerAction;
+        PlayerActions.OnPlayerAttack += HandlePlayerAttack;
     }
 
-    private void HandlePlayerAction(Player player) {
-        if (player.CurrentWorld is null) return;
-
-        World fightWorld = player.CurrentWorld;
+    private void HandlePlayerAttack(Player player, Character npc, int damage) {
 
         // Dont trigger enemy attack if no enemies left
-        if (fightWorld.NPCs.Count <= 0) return;
+        if (player.CurrentWorld.NPCs.Count <= 0) return;
 
-        NpcCharacter? npc = World.GetNearestTarget(player);
         
-        if (npc != null && npc.CanAttack(player)) npc?.Actions.Attack(player);
+        // Attack player
+        if (npc == null || npc is not NpcCharacter || npc.Health <= 0) return;
+
+        Task.Run(async () => {
+            await Task.Delay(((NpcCharacter)npc).AttackTime);
+            if (npc.CanAttack(player)) npc?.Actions.Attack(player);
+        });
     }
 
 
@@ -85,10 +89,11 @@ public class GameInstance {
         Worlds.Remove(world);
     }
 
-    public static void ChangeWorld(IWorldChanger unit, World newWorld) {
+    public static void ChangeWorld(Character unit, World newWorld) {
+        World oldWorld = unit.CurrentWorld;
         unit.CurrentWorld = newWorld;
 
-        OnPlayerWorldChanged?.InvokeFireAndForget(unit, unit.CurrentWorld, newWorld);
+        OnPlayerWorldChanged?.InvokeFireAndForget(unit, oldWorld, newWorld);
     }
 }
 
@@ -125,8 +130,8 @@ public class World {
     }
 
     public static double CalculateDistance(Character start, Character end) {
-        double deltaX = end.X + end.Width / 2 - (start.X + start.Width / 2); // center
-        double deltaY = end.Y + end.Height / 2 - (start.Y + start.Height / 2); // center
+        double deltaX = end.GetCenter().X - start.GetCenter().X;
+        double deltaY = end.GetCenter().Y - start.GetCenter().Y;
 
         return Math.Sqrt(deltaX * deltaX + deltaY * deltaY);
     }

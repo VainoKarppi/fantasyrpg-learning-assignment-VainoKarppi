@@ -5,7 +5,7 @@ using GUI;
 
 public class PlayerActions(Player player) : IActions {
     // Events
-    public static event Action<Player, NpcCharacter, int>? OnPlayerAttack;
+    public static event Action<Player, Character, int>? OnPlayerAttack;
     public static event Action<Player, ItemPotion>? OnPlayerPotionUse;
     public static event Action<Player>? OnPlayerAction;
 
@@ -24,10 +24,9 @@ public class PlayerActions(Player player) : IActions {
         target.Health -= damage;
 
         OnPlayerAttack?.InvokeFireAndForget(player, target, damage);
+        OnPlayerAction?.InvokeFireAndForget(player);
 
         if (target.Health <= 0) target.Kill(player);
-
-        OnPlayerAction?.InvokeFireAndForget(player);
     }
 
     public virtual void UsePotion(ItemPotion potion) {

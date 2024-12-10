@@ -43,7 +43,7 @@ public class GameEventListener {
     }
 
     private void HandleWorldChanged(IWorldChanger unit, World oldworld, World newWorld) {
-        Console.WriteLine($"{unit} changed World: {newWorld.Name} from {oldworld.Name}");
+        Console.WriteLine($"{unit} changed World. To {newWorld.Name} from {oldworld.Name}");
     }
     private void HandleWorldCreated(World world) {
         Console.WriteLine($"Created world: {world.Name}");
@@ -88,7 +88,7 @@ public class GameEventListener {
 
 
 
-    private void HandlePlayerAttack(Player player, NpcCharacter npc, int damage) {
+    private void HandlePlayerAttack(Player player, Character npc, int damage) {
         Console.WriteLine($"You've hit {npc.Name} with {player.CurrentWeapon?.Name}: Damage dealt: {damage}");
 
         new Effect(npc, player, Effect.EffectType.Blood);
