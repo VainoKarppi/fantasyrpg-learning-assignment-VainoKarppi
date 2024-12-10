@@ -86,10 +86,12 @@ static class MultiplayerClient {
 
             SendMessageAsync(new { MessageType = NetworkMessageType.Connect, player.Name, CurrentWorldName = player.CurrentWorld!.Name, player.X, player.Y });
         } catch (Exception ex) {
-            Console.WriteLine("CLIENT: Error connecting to server: " + ex.Message);
 
+            // TODO not triggering for some reason?
             OnConnectEnd?.InvokeFireAndForget(Client!, player, ex);
+
             Disconnect();
+            throw;
         }
     }
 

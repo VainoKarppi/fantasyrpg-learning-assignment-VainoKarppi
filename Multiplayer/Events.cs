@@ -15,7 +15,10 @@ public class NetworkEventListener {
 
 
     private void HandleMultiplayerClientConnectEnd(TcpClient client, Player player, Exception? ex) {
-        if (ex != null) return; // check connect success
+        if (ex != null) {
+            MessageBox.Show($"ERROR: {ex.Message}");
+            return;
+        }
 
         // Send current pos data
         MultiplayerClient.SendMessageAsync(new { MessageType = NetworkMessageType.SendUpdateData, player.ID, player.X, player.Y, CurrentWorldName = player.CurrentWorld.Name });
@@ -40,7 +43,7 @@ public class NetworkEventListener {
             MultiplayerClient.SendMessageAsync(new { MessageType = NetworkMessageType.CreateEffect, npc.ID, npc.CurrentWeapon.Range, TargetID = player?.ID, Name = "Ranged", CurrentWorldName = npc.CurrentWorld.Name });
         }
 
-        // TODO fix blood effect (works in HandlePlayerAttack)'
+        // TODO fix blood effect (works in HandlePlayerAttack)
         MultiplayerClient.SendMessageAsync(new { MessageType = NetworkMessageType.CreateEffect, player?.ID, Name = "Blood", CurrentWorldName = player?.CurrentWorld.Name });
         MultiplayerClient.SendMessageAsync(new { MessageType = NetworkMessageType.SendUpdateData, player?.ID, player?.Health, CurrentWorldName = player?.CurrentWorld.Name });
     }

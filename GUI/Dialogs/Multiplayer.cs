@@ -91,7 +91,7 @@ public partial class GameForm : Form {
             } catch (Exception ex) {
                 if (ex is SocketException) {
                     Console.WriteLine(ex.Message);
-                    MessageBox.Show($"Failed to connect to server!");
+                    MessageBox.Show($"ERROR: {ex.Message}");
                 }
             }
 
