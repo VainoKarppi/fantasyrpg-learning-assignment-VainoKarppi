@@ -13,12 +13,12 @@ public abstract class BaseNpcActions(NpcCharacter npc) : IActions {
 
         int damage = npc.CalculateDamage(target!);
 
+        target!.Health -= damage;
+        Effect.TriggerScreenShake();
+
         OnNpcAttack?.Invoke(npc!, (target as Player)!, damage);
         OnNpcAction?.Invoke(npc!);
 
-        Effect.TriggerScreenShake();
-
-        target!.Health -= damage;
         if (target!.Health <= 0) target!.Kill();
     }
 
