@@ -84,7 +84,7 @@ static class MultiplayerClient {
             receiveThread.Start();
             
 
-            SendMessageAsync(new { MessageType = NetworkMessageType.Connect, player.Name, CurrentWorldName = player.CurrentWorld!.Name, player.X, player.Y });
+            SendMessageAsync(new { MessageType = NetworkMessageType.Connect, player.Name, player.Health, CurrentWorldName = player.CurrentWorld!.Name, player.X, player.Y });
         } catch (Exception ex) {
 
             // TODO not triggering for some reason?

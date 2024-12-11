@@ -118,6 +118,7 @@ class MultiplayerServer {
                 }
 
                 string receivedMessage = Encoding.UTF8.GetString(messageBuffer);
+                Console.WriteLine($"SERVER: {receivedMessage}");
                 
                 NetworkMessage? message = JsonSerializer.Deserialize<NetworkMessage>(receivedMessage);
                 if (message == null) continue;
@@ -128,6 +129,8 @@ class MultiplayerServer {
                 //--- ACCEPT CONNECTION TO SERVER
                 if (method == NetworkMessageType.Connect) {
                     message.ID = GetID();
+
+                    Clients.Add(thisClient, message);
                     
                     Console.WriteLine($"SERVER: Player: {message.Name} Connected to server! ID: {message.ID}");
 
@@ -136,11 +139,9 @@ class MultiplayerServer {
                     
                     // Send sync data of other players
                     foreach (KeyValuePair<TcpClient, NetworkMessage> client in Clients) {
-                        SendMessageAsync(thisClient, new { MessageType = NetworkMessageType.ReceiveUpdateData, client.Value.ID, client.Value.Name, client.Value.X, client.Value.Y, client.Value.CurrentWorldName });
+                        if (client.Key == thisClient) continue;
+                        SendMessageAsync(thisClient, new { MessageType = NetworkMessageType.ReceiveUpdateData, client.Value.ID, client.Value.Health, client.Value.Name, client.Value.X, client.Value.Y, client.Value.CurrentWorldName });
                     }
-
-
-                    Clients.Add(thisClient, message);
 
                     OnClientConnect?.InvokeFireAndForget(thisClient, message);
 
@@ -166,6 +167,7 @@ class MultiplayerServer {
                     if (message.X.HasValue) player.X = message.X;
                     if (message.Y.HasValue) player.Y = message.Y;
                     if (message.CurrentWorldName != null) player.CurrentWorldName = message.CurrentWorldName;
+                    if (message.Health.HasValue) player.Health = message.Health;
 
                     
                     foreach (KeyValuePair<TcpClient, NetworkMessage> client in Clients) {
@@ -189,19 +191,24 @@ class MultiplayerServer {
 
                 //--- RECEIVE NPC DATA UPDATED -> Forward to other clients
                 if (method == NetworkMessageType.SendUpdateDataNpc) {
-                    NpcCharacter? npc = null;
-                    foreach (World world in GameInstance.Worlds) {
-                        npc = world.NPCs.SingleOrDefault(n => n.ID == message.ID);
-                        if (npc != null) break;
-                    }
-                    if (npc is null) continue;
+                    
+                    
+                    // Update npc on server unless it was killed
+                    if (message.Health > 0) {
+                        NpcCharacter? npc = null;
+                        foreach (World world in GameInstance.Worlds) {
+                            npc = world.NPCs.SingleOrDefault(n => n.ID == message.ID);
+                            if (npc != null) break;
+                        }
+                        if (npc == null) continue;
+
+                        if (message.X.HasValue) npc.X = (int)message.X;
+                        if (message.Y.HasValue) npc.X = (int)message.Y;
+                        if (message.Health.HasValue) npc.Health = (int)message.Health;
+                        if (message.CurrentWorldName != null) npc.CurrentWorld = GameInstance.GetWorld(message.CurrentWorldName);          
+                    };
 
                     message.MessageType = NetworkMessageType.ReceiveUpdateDataNpc;
-                    if (message.X.HasValue) npc.X = (int)message.X;
-                    if (message.Y.HasValue) npc.X = (int)message.Y;
-                    if (message.Health.HasValue) npc.Health = (int)message.Health;
-                    if (message.CurrentWorldName != null) npc.CurrentWorld = GameInstance.GetWorld(message.CurrentWorldName);
-
                     foreach (KeyValuePair<TcpClient, NetworkMessage> client in Clients) {
                         if (client.Key == thisClient) continue; // Dont send data back to sender
 

@@ -17,6 +17,8 @@ public class PlayerActions(Player player) : IActions {
 
         if (target == null || !player.CanAttack(target)) return;
 
+        player.Mana -= player.CurrentWeapon.ManaRequired;
+
         int damage = player.CalculateDamage(target);
 
         player.PlayerStatistics.DamageDealt += damage;

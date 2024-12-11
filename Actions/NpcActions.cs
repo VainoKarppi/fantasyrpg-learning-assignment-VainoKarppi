@@ -4,7 +4,7 @@ public abstract class BaseNpcActions(NpcCharacter npc) : IActions {
     // Events
     public static event Action<NpcCharacter>? OnNpcAction;
     public static event Action<NpcCharacter, ItemPotion>? OnNpcPotionUse;
-    public static event Action<NpcCharacter, Player, int>? OnNpcAttack;
+    public static event Action<NpcCharacter, Character, int>? OnNpcAttack;
 
 
     // Implement Attack method
@@ -16,7 +16,7 @@ public abstract class BaseNpcActions(NpcCharacter npc) : IActions {
         target!.Health -= damage;
         Effect.TriggerScreenShake();
 
-        OnNpcAttack?.Invoke(npc!, (target as Player)!, damage);
+        OnNpcAttack?.Invoke(npc!, target, damage);
         OnNpcAction?.Invoke(npc!);
 
         if (target!.Health <= 0) target!.Kill();

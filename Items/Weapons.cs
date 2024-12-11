@@ -4,6 +4,7 @@
 public class ItemWeapon : ItemBase {
     public double Damage { get; set; }
     public int Durability { get; set; }
+    public int ManaRequired { get; set; } = 0;
     public int Range { get; set; } = 40;
     public int ReloadTime { get; set; } = 1000;
 
@@ -113,6 +114,8 @@ public class MageWeapon : ItemWeapon {
             Durability = 40;
             Range = 230;
 
+            ManaRequired = 12;
+
             BuyPrice = 300;
             SellPrice = 80;
         }
@@ -125,6 +128,8 @@ public class MageWeapon : ItemWeapon {
             Damage = 350;
             Durability = 50;
             Range = 270;
+
+            ManaRequired = 15;
 
             SellPrice = 1400;
         }

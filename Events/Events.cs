@@ -71,9 +71,7 @@ public class GameEventListener {
         // Create effects
         if (npc!.CurrentWeapon!.Type == ItemType.MeleeWeapon) new Effect(npc, target, Effect.EffectType.Melee);
         
-
         if (npc!.CurrentWeapon!.Type == ItemType.MageWeapon) new Effect(npc, target, Effect.EffectType.Mage);
-        
 
         if (npc!.CurrentWeapon!.Type == ItemType.RangedWeapon) new Effect(npc, target, Effect.EffectType.Ranged);
         

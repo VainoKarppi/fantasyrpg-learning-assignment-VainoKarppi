@@ -76,6 +76,7 @@ public partial class GameForm : Form {
 
         int inventoryY = statsBarTop + padding + 20;
         foreach (var groupedItem in groupedItems) {
+            if (groupedItem.Name?.ToLower() == "fist") continue; // Dont add fist to list
             string? itemDisplay = groupedItem.Count > 1 
                 ? $"{groupedItem.Name} (x{groupedItem.Count})" 
                 : groupedItem.Name;

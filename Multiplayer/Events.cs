@@ -21,7 +21,7 @@ public class NetworkEventListener {
         }
 
         // Send current pos data
-        MultiplayerClient.SendMessageAsync(new { MessageType = NetworkMessageType.SendUpdateData, player.ID, player.X, player.Y, CurrentWorldName = player.CurrentWorld.Name });
+        MultiplayerClient.SendMessageAsync(new { MessageType = NetworkMessageType.SendUpdateData, player.Name, player.ID, player.X, player.Y, CurrentWorldName = player.CurrentWorld.Name });
     }
 
     private void HandlePlayerRespawn(Player player) {
@@ -29,7 +29,7 @@ public class NetworkEventListener {
         MultiplayerClient.SendMessageAsync(new { MessageType = NetworkMessageType.SendUpdateData, player.ID, player.X, player.Y, CurrentWorldName = player.CurrentWorld.Name, player.Health });
     }
 
-    private void HandleNpcAttack(NpcCharacter npc, Player player, int damage) {
+    private void HandleNpcAttack(NpcCharacter npc, Character player, int damage) {
         // Create effects
         if (npc!.CurrentWeapon!.Type == ItemType.MeleeWeapon) {
             MultiplayerClient.SendMessageAsync(new { MessageType = NetworkMessageType.CreateEffect, npc.ID, npc.CurrentWeapon.Range, TargetID = player?.ID, Name = "Melee", CurrentWorldName = npc.CurrentWorld.Name });

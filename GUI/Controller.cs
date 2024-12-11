@@ -71,6 +71,9 @@ public partial class GameForm : Form {
                 _ => throw new InvalidOperationException("Unknown weapon type")
             };
 
+            // If using mage check if has enough mana
+            if (!Player.HasEnoughMana()) return;
+
             var effectType = Player.CurrentWeapon.Type switch {
                 ItemType.MeleeWeapon => Effect.EffectType.Melee,
                 ItemType.MageWeapon => Effect.EffectType.Mage,
@@ -87,10 +90,12 @@ public partial class GameForm : Form {
                 CurrentWorldName = Player.CurrentWorld.Name
             });
 
-            new Effect(Player, npc, effectType);
-            
-
-            if (npc != null && Player.CanAttack(npc)) Player.Actions.Attack(npc);
+            if (npc != null && Player.CanAttack(npc)) {
+                new Effect(Player, npc, effectType);
+                Player.Actions.Attack(npc);
+            } else {
+                new Effect(Player, null, effectType);
+            }
         }
 
         

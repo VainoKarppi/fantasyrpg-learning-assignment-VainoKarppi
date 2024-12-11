@@ -26,8 +26,9 @@ public class Program {
         homeWorld.Buildings.Add(new World.Building("Shop", 300, 300, 100, 100, World.BuildingType.Shop));
         homeWorld.Buildings.Add(new World.Building("Quest 1", 40, 500, 80, 80, World.BuildingType.Quest));
 
-        World caveWorld = GameInstance.CreateWorld("Cave");
+       
         World forestWorld = GameInstance.CreateWorld("Forest");
+        World caveWorld = GameInstance.CreateWorld("Cave");
         World castleWorld = GameInstance.CreateWorld("Castle");
         
 

@@ -55,8 +55,15 @@ public abstract class Character : ICharacter {
     public virtual Point GetCenter() {
         return new Point(X + Width/2, Y + Height/2);
     }
+    public virtual bool HasEnoughMana() {
+        if (CurrentWeapon is MageWeapon && CurrentWeapon.ManaRequired > Mana) return false;
+        return true;
+    }
 
     public virtual bool CanAttack(Character target) {
+        // Check if player has enough mana
+        if (!HasEnoughMana()) return false;
+
         // Check weapon range (assuming CalculateDistance is a method of World)
         double distance = World.CalculateDistance(this, target);
         if (CurrentWeapon == null) return false;
