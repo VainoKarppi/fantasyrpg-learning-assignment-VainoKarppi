@@ -3,10 +3,15 @@
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net8.0-windows</TargetFramework>
-    <RootNamespace>fantasyrpg_learning_assignment_VainoKarppi</RootNamespace>
+    <UseWPF>false</UseWPF>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <RootNamespace>RPG_Game</RootNamespace>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <UseWindowsForms>true</UseWindowsForms>
+    <Version>1.0.2</Version>
+    <AssemblyVersion>1.0.2.0</AssemblyVersion>
+    <FileVersion>1.0.2.0</FileVersion>
     <NoWarn>IDE0074;CA1050;IDE0028;IDE0090;IDE0017;CA1806;CS4014;CS8618;SYSLIB1054</NoWarn>
   </PropertyGroup>
 

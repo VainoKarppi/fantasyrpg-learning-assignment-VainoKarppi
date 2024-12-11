@@ -1,5 +1,7 @@
 using System;
+using System.Diagnostics;
 using System.Net.Sockets;
+using System.Reflection;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -27,6 +29,7 @@ public class NetworkMessage {
     public int? X { get; set; }
     public int? Y { get; set; }
     public string? Name { get; set; }
+    public string? Version { get; set; }
     public string? CurrentWorldName { get; set; }
     public int? TargetID { get; set; }
 }
@@ -83,8 +86,10 @@ static class MultiplayerClient {
             Thread receiveThread = new Thread(ReceiveMessages);
             receiveThread.Start();
             
+            Assembly? assembly = Assembly.GetExecutingAssembly();
+            var fileVersion = FileVersionInfo.GetVersionInfo(assembly.Location).FileVersion;
 
-            SendMessageAsync(new { MessageType = NetworkMessageType.Connect, player.Name, player.Health, CurrentWorldName = player.CurrentWorld!.Name, player.X, player.Y });
+            SendMessageAsync(new { MessageType = NetworkMessageType.Connect, Version = fileVersion, player.Name, player.Health, CurrentWorldName = player.CurrentWorld!.Name, player.X, player.Y });
         } catch (Exception ex) {
 
             // TODO not triggering for some reason?
@@ -127,6 +132,7 @@ static class MultiplayerClient {
     }
 
     private static async void ReceiveMessages() {
+        Exception? exception = null;
         byte[] lengthBuffer = new byte[4];
         while (true) {
             try {
@@ -159,7 +165,8 @@ static class MultiplayerClient {
 
                 //--- ACCEPT SERVER CONNECTION ID
                 if (method == NetworkMessageType.Connect) {
-                    if (message.ID == null) continue;
+                    if (message.ID == null) throw new Exception("Invalid version!");
+
                     GameForm.Player.ID = (int)message.ID;
 
                     OnConnectEnd?.InvokeFireAndForget(Client!, GameForm.Player, null);
@@ -261,15 +268,16 @@ static class MultiplayerClient {
                     }
                 }
 
-            } catch (Exception) {
+            } catch (Exception ex) {
+                exception = ex;
                 break;
             }
         }
 
-        Disconnect(true);
+        Disconnect(true, exception);
     }
 
-    public static void Disconnect(bool serverShutdown = false) {
+    public static void Disconnect(bool serverShutdown = false, Exception? exception = null) {
         OtherPlayers.Clear();
         GameForm.Player.ID = -1;
 
@@ -277,6 +285,13 @@ static class MultiplayerClient {
         Client?.Close();
         Client = null;
         Stream = null;
+
+        if (exception != null) {
+            MessageBox.Show(exception.Message);
+        } else {
+            if (serverShutdown) MessageBox.Show("Server shutdown!");
+            
+        }
 
         Console.WriteLine(serverShutdown ? "CLIENT: Server shutdown!" : "CLIENT: Disconnected from the server.");
 

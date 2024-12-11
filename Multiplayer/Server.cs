@@ -6,6 +6,8 @@ using System.Text.Json;
 using System.Threading;
 using System.Text.Json.Serialization;
 using System.Collections;
+using System.Reflection;
+using System.Diagnostics;
 
 class MultiplayerServer {
     //--- EVENTS
@@ -13,6 +15,8 @@ class MultiplayerServer {
     public static event Action<TcpClient, NetworkMessage>? OnClientDisconnect;
     public static event Action? OnServerStart;
     public static event Action? OnServerStop;
+
+    public static string ServerVersion { get; private set; } = "1.0.0.0";
 
 
     public static TcpListener? Server;
@@ -30,6 +34,12 @@ class MultiplayerServer {
     public static async void Start(string ipAddress, int port) {
         if (ServerRunning) throw new Exception("Server already running!");
         if (Server == null) Server = new TcpListener(IPAddress.Parse(ipAddress), port);
+
+        // Get server version
+        Assembly? assembly = Assembly.GetExecutingAssembly();
+        var fileVersion = FileVersionInfo.GetVersionInfo(assembly.Location).FileVersion;
+        if (!string.IsNullOrEmpty(fileVersion)) ServerVersion = fileVersion;
+        
 
         CancellationToken = new CancellationTokenSource(); // Reset token
 
@@ -90,6 +100,37 @@ class MultiplayerServer {
         });
     }
 
+    private static void SendMessage(TcpClient client, object message) {
+        NetworkStream stream = client.GetStream();
+
+
+        if (stream is null) return;
+
+        try {
+            var options = new JsonSerializerOptions {
+                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+            };
+
+            // Serialize the message to JSON
+            string jsonMessage = JsonSerializer.Serialize(message, options);
+
+            // Convert the JSON string to bytes
+            byte[] data = Encoding.UTF8.GetBytes(jsonMessage);
+
+            // Prefix the data with its length (4 bytes for an integer)
+            byte[] lengthPrefix = BitConverter.GetBytes(data.Length);
+            byte[] fullMessage = new byte[lengthPrefix.Length + data.Length];
+
+            Buffer.BlockCopy(lengthPrefix, 0, fullMessage, 0, lengthPrefix.Length);
+            Buffer.BlockCopy(data, 0, fullMessage, lengthPrefix.Length, data.Length);
+
+            // Send the prefixed message
+            stream.Write(fullMessage);
+        } catch (Exception ex) {
+            Console.WriteLine($"SERVER: Error sending message: {ex.Message}");
+        }
+    }
+
     private static int _lastID = 0;    
     private static int GetID() {
         return ++_lastID;
@@ -117,6 +158,8 @@ class MultiplayerServer {
                     totalBytesRead += bytesRead;
                 }
 
+                if (CancellationToken.IsCancellationRequested) break;
+
                 string receivedMessage = Encoding.UTF8.GetString(messageBuffer);
                 Console.WriteLine($"SERVER: {receivedMessage}");
                 
@@ -130,12 +173,20 @@ class MultiplayerServer {
                 if (method == NetworkMessageType.Connect) {
                     message.ID = GetID();
 
-                    Clients.Add(thisClient, message);
                     
-                    Console.WriteLine($"SERVER: Player: {message.Name} Connected to server! ID: {message.ID}");
+
+                    // Make sure client is using right version
+                    if (message.Version != ServerVersion) {
+                        SendMessage(thisClient, new { MessageType = NetworkMessageType.Connect });
+                        throw new Exception($"SERVER: Player: {message.Name} is using wrong version! Server: {ServerVersion}, Client: {message.Version}");
+                    }
 
                     // Send client id back to connected client
                     SendMessageAsync(thisClient, new { MessageType = NetworkMessageType.Connect, message.ID });
+
+                    Clients.Add(thisClient, message);
+
+                    Console.WriteLine($"SERVER: Player: {message.Name} Connected to server! ID: {message.ID}");
                     
                     // Send sync data of other players
                     foreach (KeyValuePair<TcpClient, NetworkMessage> client in Clients) {
@@ -220,7 +271,7 @@ class MultiplayerServer {
             } catch (Exception ex) {
                 if (ex is OperationCanceledException) break;
 
-                Console.WriteLine("SERVER: Error handling client: " + ex.Message);
+                Console.WriteLine(ex.Message);
                 break;
             }
         }
