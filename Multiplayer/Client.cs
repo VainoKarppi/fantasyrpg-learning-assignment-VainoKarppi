@@ -56,7 +56,7 @@ static class MultiplayerClient {
         return null;
     }
     //--- EVENTS
-    private static NetworkEventListener? EventListeners;
+    private static NetworkClientEventListener? EventListeners;
     public static event Action<TcpClient, Player>? OnConnectStart;
     public static event Action<TcpClient, Player, Exception?>? OnConnectEnd;
     public static event Action<bool>? OnDisconnect;
@@ -80,7 +80,7 @@ static class MultiplayerClient {
             Stream = Client.GetStream();
 
             // Initialize event listeners
-            if (EventListeners is null) EventListeners = new NetworkEventListener();
+            if (EventListeners is null) EventListeners = new NetworkClientEventListener();
             
             // Start receiving data in a separate thread
             Thread receiveThread = new Thread(ReceiveMessages);

@@ -11,6 +11,7 @@ using System.Diagnostics;
 
 class MultiplayerServer {
     //--- EVENTS
+    private static NetworkServerEventListener? EventListeners;
     public static event Action<TcpClient, NetworkMessage>? OnClientConnect;
     public static event Action<TcpClient, NetworkMessage>? OnClientDisconnect;
     public static event Action? OnServerStart;
@@ -39,6 +40,9 @@ class MultiplayerServer {
         Assembly? assembly = Assembly.GetExecutingAssembly();
         var fileVersion = FileVersionInfo.GetVersionInfo(assembly.Location).FileVersion;
         if (!string.IsNullOrEmpty(fileVersion)) ServerVersion = fileVersion;
+
+        // Initialize event listeners
+        if (EventListeners is null) EventListeners = new NetworkServerEventListener();
         
 
         CancellationToken = new CancellationTokenSource(); // Reset token
@@ -214,6 +218,10 @@ class MultiplayerServer {
 
                     message.MessageType = NetworkMessageType.ReceiveUpdateData;
 
+                    // Check if new world matches the current one stored on server
+                    bool worldChanged = message.CurrentWorldName != null && message.CurrentWorldName != player.CurrentWorldName;
+
+                    // Update player data on servers memory
                     if (message.Name != null) player.Name = message.Name;
                     if (message.X.HasValue) player.X = message.X;
                     if (message.Y.HasValue) player.Y = message.Y;
@@ -224,8 +232,8 @@ class MultiplayerServer {
                     foreach (KeyValuePair<TcpClient, NetworkMessage> client in Clients) {
                         if (client.Key == thisClient) continue; // Dont send data back to sender
 
-                        // TODO Only sync data if in same world
-                        //if (playerData.Key.CurrentWorldName?.ToLower() != player.CurrentWorldName?.ToLower()) continue;
+                        // Only forward data if in same world unless it was changed
+                        if (client.Value.CurrentWorldName?.ToLower() != player.CurrentWorldName?.ToLower() && !worldChanged) continue;
 
                         SendMessageAsync(client.Key, message);
                     }

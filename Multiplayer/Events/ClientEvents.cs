@@ -1,8 +1,8 @@
 
 using System.Net.Sockets;
 
-public class NetworkEventListener {
-    public NetworkEventListener() {
+public class NetworkClientEventListener {
+    public NetworkClientEventListener() {
 
         PlayerActions.OnPlayerAttack += HandlePlayerAttack;
 
