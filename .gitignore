@@ -1,3 +1,6 @@
 obj/
 bin/
 
+**.sln
+*.sln
+RPG_Game.sln
