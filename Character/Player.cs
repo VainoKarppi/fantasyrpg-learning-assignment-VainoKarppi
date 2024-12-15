@@ -170,6 +170,26 @@ public class Player : Character, IWorldChanger {
         return removed;
     }
 
+    public NpcCharacter? GetNearestNpcTarget() {
+        if (CurrentWorld.NPCs.Count == 0) return null;
+
+        NpcCharacter? closestTarget = null;
+        double closestDistance = -1;
+
+        foreach (NpcCharacter npc in CurrentWorld.NPCs) {
+
+            double distance = World.CalculateDistance(this, npc);
+
+            // If the current NPC is the first one or is closer than the previous one
+            if (closestTarget == null || distance < closestDistance) {
+                closestTarget = npc;
+                closestDistance = distance; // Update the closest distance
+            }
+        }
+
+        return closestTarget;
+    }
+
     public List<T> GetInventoryItems<T>() where T : class {
         return InventoryItems
             .Where(item => item is T)

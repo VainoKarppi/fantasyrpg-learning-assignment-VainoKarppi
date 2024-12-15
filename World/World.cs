@@ -1,101 +1,7 @@
 
 using GUI;
 
-public class GameInstance {
 
-    private static GameInstance? _instance;
-
-    public static List<World> Worlds { get; private set; } = [];
-
-    public static List<Player> Players { get; set; } = []; // In case of multiplayer support
-
-
-    // Events
-    public static event Action<IWorldChanger, World, World>? OnPlayerWorldChanged;
-    public static event Action<World>? OnWorldCreated;
-    
-
-    public GameInstance() {
-        if (_instance != null) throw new InvalidOperationException("Only one instance can be used!");
-
-        _instance = this;
-
-        PlayerActions.OnPlayerAttack += HandlePlayerAttack;
-    }
-
-    private void HandlePlayerAttack(Player player, Character npc, int damage) {
-
-        // Dont trigger enemy attack if no enemies left
-        if (player.CurrentWorld.NPCs.Count <= 0) return;
-
-        
-        // Attack player
-        if (npc == null || npc is not NpcCharacter || npc.Health <= 0) return;
-
-        Task.Run(async () => {
-            await Task.Delay(((NpcCharacter)npc).AttackTime);
-            if (npc.CanAttack(player)) npc?.Actions.Attack(player);
-        });
-    }
-
-
-    
-    public static void RemoveAllNpcs() {
-        foreach (World world in Worlds) {
-            world.NPCs.Clear();
-        }
-    }
-    
-
-    public static GameInstance GetInstance() {
-        if (_instance == null) throw new InvalidOperationException("Instance not found!");
-
-        return _instance;
-    }
-
-    public static void AddPlayerToInstance(Player player) {
-        if (_instance == null) throw new InvalidOperationException("Instance not found!");
-
-        Players.Add(player);
-    }
-
-    public static bool RemovePlayerFromInstance(Player player) {
-        if (_instance == null) throw new InvalidOperationException("Instance not found!");
-
-        bool removed = Players.Remove(player);
-        return removed;
-    }
-    
-
-    public static World CreateWorld(string name) {
-        World world = new World(name);
-
-        Worlds.Add(world);
-        
-        OnWorldCreated?.InvokeFireAndForget(world);
-
-        return world;
-    }
-
-    public static World GetWorld(string name) {
-        return Worlds.First(x => x.Name.Equals(name, StringComparison.CurrentCultureIgnoreCase));
-    }
-
-    public static void DeleteWorld(string name) {
-        DeleteWorld(GetWorld(name));
-    }
-
-    public static void DeleteWorld(World world) {
-        Worlds.Remove(world);
-    }
-
-    public static void ChangeWorld(Character unit, World newWorld) {
-        World oldWorld = unit.CurrentWorld;
-        unit.CurrentWorld = newWorld;
-
-        OnPlayerWorldChanged?.InvokeFireAndForget(unit, oldWorld, newWorld);
-    }
-}
 
 
 public interface IWorldChanger {
@@ -130,6 +36,9 @@ public class World {
     }
 
     public static double CalculateDistance(Character start, Character end) {
+        if (start == null || end is null) return -1;
+        if (start.CurrentWorld != end.CurrentWorld) return -1;
+
         double deltaX = end.GetCenter().X - start.GetCenter().X;
         double deltaY = end.GetCenter().Y - start.GetCenter().Y;
 
@@ -148,25 +57,7 @@ public class World {
         return Math.Sqrt(deltaX * deltaX + deltaY * deltaY); // Use double to return decimal results
     }
 
-    public static NpcCharacter? GetNearestTarget(Player player) {
-        if (player.CurrentWorld.NPCs.Count == 0) return null;
-
-        NpcCharacter? closestTarget = null;
-        double closestDistance = -1;
-
-        foreach (NpcCharacter npc in player.CurrentWorld.NPCs) {
-
-            double distance = CalculateDistance(player, npc);
-
-            // If the current NPC is the first one or is closer than the previous one
-            if (closestTarget == null || distance < closestDistance) {
-                closestTarget = npc;
-                closestDistance = distance; // Update the closest distance
-            }
-        }
-
-        return closestTarget;
-    }
+    
 
     // Method to add an NPC to the world
     public List<NpcCharacter> AddNPC(NpcCharacter npc) {

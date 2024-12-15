@@ -61,7 +61,7 @@ public partial class GameForm : Form {
             pressedKeys.Remove(Keys.Space);
             if (Player.CurrentWeapon == null || Player.CurrentState == Character.State.Attacking) return;
 
-            NpcCharacter? npc = World.GetNearestTarget(Player);
+            NpcCharacter? npc = Player.GetNearestNpcTarget();
 
             // Create effect based on current weapon type
             var effectName = Player.CurrentWeapon.Type switch {
