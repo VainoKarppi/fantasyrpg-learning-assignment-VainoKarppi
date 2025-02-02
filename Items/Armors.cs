@@ -1,4 +1,6 @@
 
+using System.Reflection;
+
 public class ItemArmor : ItemBase {
     public double MeleeAttackMultiplier { get; set; } =  1;
     public double MeleeDefenseMultiplier { get; set; } =  1;
@@ -14,6 +16,24 @@ public class ItemArmor : ItemBase {
 
     public ItemArmor() {
         Type = ItemType.ArmorBase;
+    }
+
+    public static ItemArmor? GetArmorByName(string? name) {
+        if (name == null) return null;
+        
+        var weaponTypes = Assembly.GetExecutingAssembly()
+            .GetTypes()
+            .Where(t => t.IsSubclassOf(typeof(ItemArmor)) && !t.IsAbstract);
+
+        foreach (var type in weaponTypes) {
+            if (Activator.CreateInstance(type) is ItemArmor armorInstance &&
+                armorInstance.Name != null &&
+                armorInstance.Name.Equals(name, StringComparison.OrdinalIgnoreCase)) {
+                    return armorInstance;
+            }
+        }
+
+        return null;
     }
 }
 

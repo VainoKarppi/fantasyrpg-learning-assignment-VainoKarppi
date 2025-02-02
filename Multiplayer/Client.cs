@@ -67,13 +67,13 @@ static class MultiplayerClient {
 
     public static List<NetworkMessage> OtherPlayers = [];
 
-    public static void Connect(string ipAddress, int port, Player player) {
+    public static void Connect(string ipAddress, Player player) {
         if (player is null) throw new Exception("No player object found!");
         if (Client != null) throw new Exception("Already connected to server!");
 
         try {
             Client = new TcpClient();
-            Client.Connect(ipAddress, port);
+            Client.Connect(ipAddress, Config.Instance.Multiplayer.ServerPort);
 
             OnConnectStart?.InvokeFireAndForget(Client!, player);
             

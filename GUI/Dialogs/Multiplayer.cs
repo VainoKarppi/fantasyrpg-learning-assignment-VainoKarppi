@@ -81,7 +81,7 @@ public partial class GameForm : Form {
                 multiplayerForm.Enabled = false;
                 string? ipAddress = PromptForIPAddress() ?? throw new Exception("Invalid IP address!");
                 
-                MultiplayerClient.Connect(ipAddress, 7842, Player!);
+                MultiplayerClient.Connect(ipAddress, Player!);
 
                 // Start over
                 GameInstance.RemoveAllNpcs();
@@ -128,8 +128,8 @@ public partial class GameForm : Form {
             Player.X = ScreenWidth / 2;
             Player.Y = (ScreenHeight - StatsBarHeight) / 2;
 
-            new Thread(() => MultiplayerServer.Start("0.0.0.0", 7842)).Start(); // Start in new thread
-            MultiplayerClient.Connect("127.0.0.1", 7842, Player); // Locally connect to self host server
+            new Thread(() => MultiplayerServer.Start()).Start(); // Start in new thread
+            MultiplayerClient.Connect("127.0.0.1", Player); // Locally connect to self host server
 
             multiplayerForm.Close();
             Invalidate();

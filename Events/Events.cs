@@ -22,6 +22,9 @@ public class GameEventListener {
         Quests.OnQuestCreated += HandleQuestCreated;
         Quests.OnQuestUpdated += HandleQuestUpdated;
         Quests.OnQuestEnded += HandleQuestEnded;
+
+        Database.OnPlayerRestored += HandlePlayerRestored;
+        Database.OnPlayerSaved += HandlePlayerSaved;
     }
 
 
@@ -61,6 +64,12 @@ public class GameEventListener {
     }
     private void HandlePlayerCreated(Player player) {
         Console.WriteLine($"Created Player: {player.Name}");
+    }
+    private void HandlePlayerRestored(Player player) {
+        Console.WriteLine($"Restored Player: {player.Name}");
+    }
+    private void HandlePlayerSaved(Player player) {
+        Console.WriteLine($"Saved Player: {player.Name}");
     }
 
 

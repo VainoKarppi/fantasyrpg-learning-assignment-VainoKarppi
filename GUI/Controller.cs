@@ -90,7 +90,7 @@ public partial class GameForm : Form {
                 CurrentWorldName = Player.CurrentWorld.Name
             });
 
-            if (npc != null && Player.CanAttack(npc)) {
+            if (Player.CanAttack(npc)) {
                 new Effect(Player, npc, effectType);
                 Player.Actions.Attack(npc);
             } else {
@@ -101,23 +101,35 @@ public partial class GameForm : Form {
         
     }
 
-    private void ProcessMovement() {
-        if (pressedKeys.Contains(Keys.W)) {
-            Player.Y -= MoveStep;
-        }
-        if (pressedKeys.Contains(Keys.A)) {
-            Player.X -= MoveStep;
-        }
-        if (pressedKeys.Contains(Keys.S)) {
-            Player.Y += MoveStep;
-        }
-        if (pressedKeys.Contains(Keys.D)) {  
-            Player.X += MoveStep;
-        }
+    private async void ProcessMovement() {
+        const float stepSize = 1f;
 
-        // Redraw the screen
-        Invalidate();
+        for (int i = 0; i < MoveStep; i++) {
+            float deltaX = 0;
+            float deltaY = 0;
+        
+            if (pressedKeys.Contains(Keys.W)) deltaY -= stepSize;
+            if (pressedKeys.Contains(Keys.A)) deltaX -= stepSize;
+            if (pressedKeys.Contains(Keys.S)) deltaY += stepSize;
+            if (pressedKeys.Contains(Keys.D)) deltaX += stepSize;
+
+            // Normalize diagonal movement to prevent speed boost
+            if (deltaX != 0 && deltaY != 0) {
+                float normalizationFactor = (float)(1 / Math.Sqrt(2));
+                deltaX *= normalizationFactor;
+                deltaY *= normalizationFactor;
+            }
+
+            Player.X += (int)Math.Round(deltaX);
+            Player.Y += (int)Math.Round(deltaY);
+
+            // Redraw the screen
+            Invalidate();
+
+            await Task.Delay(10);
+        }
     }
+
 
     
 

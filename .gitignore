@@ -1,6 +1,11 @@
 obj/
 bin/
+[M]igrations/
 
 **.sln
 *.sln
 RPG_Game.sln
+
+**.db
+**.db-shm
+**.db-wal

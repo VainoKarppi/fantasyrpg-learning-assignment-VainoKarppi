@@ -14,7 +14,6 @@ public class GameInstance {
     // Events
     public static event Action<IWorldChanger, World, World>? OnPlayerWorldChanged;
     public static event Action<World>? OnWorldCreated;
-    
 
     public GameInstance() {
         if (_instance != null) throw new InvalidOperationException("Only one instance can be used!");
@@ -95,5 +94,9 @@ public class GameInstance {
         unit.CurrentWorld = newWorld;
 
         OnPlayerWorldChanged?.InvokeFireAndForget(unit, oldWorld, newWorld);
+    }
+
+    public static int GetRandomID() {
+        return new Random().Next(0, int.MaxValue);
     }
 }

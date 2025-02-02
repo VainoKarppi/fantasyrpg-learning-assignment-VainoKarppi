@@ -68,27 +68,4 @@ public class Shop {
         
         return buyableItems;
     }
-
-
-    public virtual void DisplaySellableItems(Dictionary<ISellable, int> sellableItems) {
-        Console.WriteLine("-------------SELLABLES-------------");
-        int i = 0;
-        foreach (KeyValuePair<ISellable,int> item in sellableItems) {
-            Console.WriteLine($"    [{i}] {item.Key.Name}, Price: {item.Key.SellPrice}");
-            i++;
-        }
-        Console.WriteLine("-----------------------------------");
-    }
-
-
-    // Method to display the items available in the shop
-    public virtual void DisplayShopInventory() {
-        Console.WriteLine("-----------Shop Inventory-----------");
-        int i = 0;
-        foreach (IBuyable shopItem in ItemsForSale) {
-            Console.WriteLine($"[{i}] Item: {shopItem.Name}, Price: {shopItem.BuyPrice}");
-            i++;
-        }
-        Console.WriteLine("------------------------------------");
-    }
 }

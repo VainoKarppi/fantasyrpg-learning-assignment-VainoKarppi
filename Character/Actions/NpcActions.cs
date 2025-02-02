@@ -13,6 +13,8 @@ public abstract class BaseNpcActions(NpcCharacter npc) : IActions {
 
         int damage = npc.CalculateDamage(target!);
 
+        if (target is Player player) player.PlayerStatistics.DamageTaken += damage;
+
         target!.Health -= damage;
         Effect.TriggerScreenShake();
 

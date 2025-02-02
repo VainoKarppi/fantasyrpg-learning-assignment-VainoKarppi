@@ -1,0 +1,43 @@
+{
+    "Multiplayer": {
+        "ServerPort": 7842
+    },
+    "Database": {
+        "Name": "RpgGame.db"
+    },
+    "Worlds": [
+        {
+            "name": "Home",
+            "enemies": [],
+            "buildings": [
+                {
+                    "name": "Shop",
+                    "type": "shop",
+                    "position": {"x": 300, "y": 300},
+                    "size": {"width": 100, "height": 100}
+                },
+                {
+                    "name": "Quest 1",
+                    "type": "quest",
+                    "position": {"x": 40, "y": 500},
+                    "size": {"width": 80, "height": 80}
+                }
+            ]
+        },
+        {
+            "name": "Forest",
+            "enemies": ["warrior", "archer", "archer", "archer"],
+            "buildings": []
+        },
+        {
+            "name": "Cave",
+            "enemies": ["warrior", "mage", "mage", "mage"],
+            "buildings": []
+        },
+        {
+            "name": "Castle",
+            "enemies": ["warrior", "warrior", "warrior", "archer"],
+            "buildings": []
+        }
+    ]
+}

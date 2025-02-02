@@ -27,11 +27,28 @@ public partial class GameForm : Form {
     public const int WorldWidth = ScreenWidth;
     public const int WorldHeight = ScreenHeight - StatsBarHeight - TopBarHeight;
     
-    public GameForm(Player player, Shop? shop = null) {
-        // Initialize the player
-        Player = player ?? throw new ArgumentNullException(nameof(player));
-        
-        player.Name = PromptForUsername();
+    public GameForm(Shop? shop = null) {
+        // Initialize Player
+        string name = PromptForUsername();
+
+        // Save/Restore player to/From DB
+        try {
+            Player? restorePlayer = Database.RestorePlayer(name);
+            
+            if (restorePlayer == null) {
+                World homeWorld = GameInstance.Worlds.First(x => x.IsSafeWorld);
+                Player = new Player(homeWorld, "Player");
+                Player.Name =  name;
+                Player.Money = 1500;
+                Player.AddItem(new ItemDrop.Gems.Sapphire());
+
+                Database.SavePlayerAsync(Player).Wait();
+            } else {
+                Player = restorePlayer;
+            }
+        } catch (Exception ex) {
+            Console.WriteLine(ex.Message);
+        }
         
         // Initialize Shop
         Shop = shop ?? Shop;
@@ -56,8 +73,22 @@ public partial class GameForm : Form {
         Paint += GameForm_Paint;
         KeyDown += GameForm_KeyDown;
         KeyUp += GameForm_KeyUp;
+
+        FormClosing += GameForm_FormClosing;
     }
 
+
+    private async void GameForm_FormClosing(object? sender, FormClosingEventArgs e) {
+        try {
+            Console.WriteLine("Saving player...");
+            await Database.SavePlayerAsync(Player);
+
+            Console.WriteLine("Saving NPCs...");
+            await Database.SaveAllNpcs();
+        } catch (Exception ex) {
+            Console.WriteLine($"An error occurred while saving the player: {ex.Message}");
+        }
+    }
 
     
 

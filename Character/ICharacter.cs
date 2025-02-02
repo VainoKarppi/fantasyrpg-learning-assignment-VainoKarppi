@@ -26,7 +26,7 @@ public abstract class Character : ICharacter {
 
     public int ID { get; set; } = -1;
 
-    public string? Name { get; set; }
+    public string Name { get; set; }
 
     public int Health { get; set; } = 100;
     public int MaxHealth { get; set; } = 100;
@@ -49,7 +49,6 @@ public abstract class Character : ICharacter {
         Idle,
         Attacking,
         Moving,
-        Waiting
     }
 
     public virtual Point GetCenter() {
@@ -60,7 +59,9 @@ public abstract class Character : ICharacter {
         return true;
     }
 
-    public virtual bool CanAttack(Character target) {
+    public virtual bool CanAttack(Character? target) {
+        if (target == null) return false;
+
         // Check if player has enough mana
         if (!HasEnoughMana()) return false;
 

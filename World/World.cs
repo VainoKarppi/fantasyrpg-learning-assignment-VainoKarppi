@@ -1,4 +1,5 @@
 
+using System.Threading.Tasks;
 using GUI;
 
 
@@ -76,7 +77,7 @@ public class World {
 
 
 
-    public static (int, int) FindSafeSpaceFromWorld(World worldToSpawn, int minDistance = 100) {
+    public (int, int) FindSafeSpace(int minDistance = 100) {
 
         Random random = new Random();
 
@@ -86,15 +87,15 @@ public class World {
             tries++;
 
             // Don't allow NPCs to spawn right next to borders
-            int xSpawn = random.Next(100, GUI.GameForm.ScreenWidth - 100);
-            int ySpawn = random.Next(100, GUI.GameForm.ScreenHeight - GUI.GameForm.StatsBarHeight - 100);
+            int xSpawn = random.Next(100, GameForm.ScreenWidth - 100);
+            int ySpawn = random.Next(100, GameForm.ScreenHeight - GameForm.StatsBarHeight - 100);
 
-            if (worldToSpawn.NPCs.Count == 0) return (xSpawn, ySpawn);
+            if (NPCs.Count == 0) return (xSpawn, ySpawn);
 
             bool isSafe = true; // Assume the spot is safe initially
 
             // Check collision with existing NPCs
-            foreach (NpcCharacter existingNpc in worldToSpawn.NPCs) {
+            foreach (NpcCharacter existingNpc in NPCs) {
                 double distance = Math.Sqrt(Math.Pow(existingNpc.X - xSpawn, 2) + Math.Pow(existingNpc.Y - ySpawn, 2)); // Calculate distance to each other NPC
 
                 // Check if distance is less than minimum distance, if so, it's not safe

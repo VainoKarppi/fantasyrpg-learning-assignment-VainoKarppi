@@ -11,8 +11,14 @@ public class NetworkClientEventListener {
         BaseNpcActions.OnNpcAttack += HandleNpcAttack;
 
         MultiplayerClient.OnConnectEnd += HandleMultiplayerClientConnectEnd;
+
+        NpcFactory.OnNpcMoved += HandleNpcMoved;
     }
 
+    private void HandleNpcMoved(NpcCharacter npc) {
+        // Send current pos data
+        MultiplayerClient.SendMessageAsync(new { MessageType = NetworkMessageType.SendUpdateDataNpc, npc.ID, npc.X, npc.Y, CurrentWorldName = npc.CurrentWorld.Name });
+    }
 
     private void HandleMultiplayerClientConnectEnd(TcpClient client, Player player, Exception? ex) {
         if (ex != null) {

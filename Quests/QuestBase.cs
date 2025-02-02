@@ -2,6 +2,8 @@ public abstract class QuestBase : IQuest {
     public virtual string Name { get; set; }
     public Player QuestOwner { get; set; }
 
+    public bool Completed { get; set; } = false;
+
 
     public virtual string Description { get; set; } = "No description available!";
     public virtual int CurrentStageIndex { get; set; } = 0;
@@ -32,6 +34,7 @@ public abstract class QuestBase : IQuest {
         CurrentStageIndex++; // Increment to next stage
 
         if (CurrentStageIndex == MissionStages.Count) {
+            Completed = true;
             Quests.TriggerQuestEndedEvent(this, true);
             HandleRewards();
 

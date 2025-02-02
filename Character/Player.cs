@@ -2,15 +2,13 @@
 
 
 
+using System.Text.Json;
 using GUI;
 
 public class Player : Character, IWorldChanger {
 
     public static Color Color => Color.Blue;
     public Rectangle Bounds => new Rectangle(X, Y, Width, Height);
-
-
-
 
     public int? Money { get; set; } = 0;
 
@@ -28,12 +26,13 @@ public class Player : Character, IWorldChanger {
     public static event Action<Player>? OnPlayerRespawn;
 
 
-    public Statistics PlayerStatistics { get; private set; } = new Statistics();
+    public Statistics PlayerStatistics { get; set; } = new Statistics();
     public class Statistics {
         public int EnemiesKilled { get; set; }
         public int DeathsCount { get; set; }
         public double DamageDealt { get; set; }
-        public double DamageTaken { get; set; } // TODO
+        public double DamageTaken { get; set; }
+        public int QuestsCompleted { get; set; }
 
         // TODO what else to add to statistics ???
     }
@@ -50,6 +49,14 @@ public class Player : Character, IWorldChanger {
         CurrentWeapon = new MeleeWeapon.Fists();
 
         OnPlayerCreated?.InvokeFireAndForget(this);
+    }
+
+    public string SerializeStatistics() {
+        return JsonSerializer.Serialize(PlayerStatistics);
+    }
+
+    public void DeserializeStatistics(string json) {
+        PlayerStatistics = JsonSerializer.Deserialize<Statistics>(json)!;
     }
 
     public override void Kill(Character? killer = null) {
@@ -164,8 +171,11 @@ public class Player : Character, IWorldChanger {
 
     public bool RemoveQuest(IQuest quest) {
         bool removed = QuestList.Remove(quest);
-
-        if (removed) CurrentQuest = null;
+        
+        if (removed) {
+            CurrentQuest = null;
+            if (quest.Completed) quest.QuestOwner.PlayerStatistics.QuestsCompleted++;
+        }
 
         return removed;
     }

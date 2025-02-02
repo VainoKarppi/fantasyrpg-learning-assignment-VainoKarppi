@@ -1,6 +1,8 @@
 
 
 
+using System.Reflection;
+
 public class ItemWeapon : ItemBase {
     public double Damage { get; set; }
     public int Durability { get; set; }
@@ -11,6 +13,28 @@ public class ItemWeapon : ItemBase {
     public ItemWeapon() {
         Type = ItemType.WeaponBase;
     }
+
+
+
+
+    public static ItemWeapon? GetWeaponByName(string? name) {
+        if (name == null) return null;
+        
+        var weaponTypes = Assembly.GetExecutingAssembly()
+            .GetTypes()
+            .Where(t => t.IsSubclassOf(typeof(ItemWeapon)) && !t.IsAbstract);
+
+        foreach (var type in weaponTypes) {
+            if (Activator.CreateInstance(type) is ItemWeapon weaponInstance &&
+                weaponInstance.Name != null &&
+                weaponInstance.Name.Equals(name, StringComparison.OrdinalIgnoreCase)) {
+                    return weaponInstance;
+            }
+        }
+
+        return null;
+    }
+
 }
 
 

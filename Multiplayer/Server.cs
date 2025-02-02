@@ -32,9 +32,9 @@ class MultiplayerServer {
         return HostClient != null;
     }
 
-    public static async void Start(string ipAddress, int port) {
+    public static async void Start() {
         if (ServerRunning) throw new Exception("Server already running!");
-        if (Server == null) Server = new TcpListener(IPAddress.Parse(ipAddress), port);
+        if (Server == null) Server = new TcpListener(IPAddress.Parse("0.0.0.0"), Config.Instance.Multiplayer.ServerPort);
 
         // Get server version
         Assembly? assembly = Assembly.GetExecutingAssembly();

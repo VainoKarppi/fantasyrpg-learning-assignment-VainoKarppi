@@ -3,6 +3,7 @@
 public partial class NpcCharacter : Character, IWorldChanger {
 
     public int AttackTime { get; set; } = 1500; // Milliseconds after player hit the NPC
+    public int RespawnTime { get; set; } = 20; // Seconds after NPC is killed
 
 
 
@@ -38,6 +39,7 @@ public partial class NpcCharacter : Character, IWorldChanger {
     }
 
     public override void Kill(Character? killer = null) {
+        Database.RemoveNPC(ID);
         CurrentWorld.RemoveNPC(this);
 
         if (killer is Player) (killer as Player)!.PlayerStatistics.EnemiesKilled++;
@@ -47,7 +49,7 @@ public partial class NpcCharacter : Character, IWorldChanger {
 
 
 
-    public static NpcCharacter CreateNPC(string npcType, World spawnWorld, (int xPos, int yPos) position, int? health = null) {
+    public static NpcCharacter CreateNPC(string npcType, World spawnWorld, (int xPos, int yPos) position, int? health = null, bool storeToDatabase = true) {
         if (spawnWorld == null) throw new ArgumentNullException(nameof(spawnWorld), "World cannot be null when creating an NPC.");
 
         NpcCharacter npc = npcType.ToLower() switch {
@@ -58,6 +60,10 @@ public partial class NpcCharacter : Character, IWorldChanger {
         };
 
         if (health != null) npc.Health = (int)health;
+
+        npc.ID = GameInstance.GetRandomID();
+        
+        if (storeToDatabase) Database.SaveNpcAsync(npc);
 
         spawnWorld.AddNPC(npc);
         
